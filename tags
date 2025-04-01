@@ -1,0 +1,221 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+"[]"表示可选、"<>"表示必选	git笔记/GitHub入门与实践笔记.md	/^# "[]"表示可选、"<>"表示必选$/;"	c	language:Markdown
+$(OUT)	网络编程/实践/9.3/Makefile	/^$(OUT): $(SRC)$/;"	t	language:Make
+*.tcc	.vscode/settings.json	/^        "*.tcc": "c",$/;"	s	language:JSON	object:files.associations
+--wait:会等待编辑器关闭再继续后续操作	git笔记/GitHub入门与实践笔记.md	/^		--wait:会等待编辑器关闭再继续后续操作$/;"	s	language:Markdown
+.gitignore默认.git目录为根目录，不需要在文件前面加/	git笔记/GitHub入门与实践笔记.md	/^# .gitignore默认.git目录为根目录，不需要在文件前面加\/$/;"	c	language:Markdown
+1.1常识	linux笔记/linux操作.md	/^### 1.1常识$/;"	S	language:Markdown
+1.2 apt软件包管理	linux笔记/linux操作.md	/^### 1.2 apt软件包管理$/;"	S	language:Markdown
+1.2.1 安装软件包	linux笔记/linux操作.md	/^#### 1.2.1 安装软件包$/;"	t	language:Markdown
+1.2.10 列出所有包	linux笔记/linux操作.md	/^#### 1.2.10 列出所有包$/;"	t	language:Markdown
+1.2.11 安装源中指定的所有版本	linux笔记/linux操作.md	/^#### 1.2.11 安装源中指定的所有版本$/;"	t	language:Markdown
+1.2.2 移除软件包	linux笔记/linux操作.md	/^#### 1.2.2 移除软件包$/;"	t	language:Markdown
+1.2.3 移除软件包及配置文件	linux笔记/linux操作.md	/^#### 1.2.3 移除软件包及配置文件$/;"	t	language:Markdown
+1.2.4 刷新存储库	linux笔记/linux操作.md	/^#### 1.2.4 刷新存储库$/;"	t	language:Markdown
+1.2.5 升级所有可用软件包	linux笔记/linux操作.md	/^#### 1.2.5 升级所有可用软件包$/;"	t	language:Markdown
+1.2.6 自动删除不需要的包	linux笔记/linux操作.md	/^#### 1.2.6 自动删除不需要的包$/;"	t	language:Markdown
+1.2.7 在升级软件包自动处理依赖关系	linux笔记/linux操作.md	/^#### 1.2.7 在升级软件包自动处理依赖关系$/;"	t	language:Markdown
+1.2.8 搜索应用	linux笔记/linux操作.md	/^#### 1.2.8 搜索应用$/;"	t	language:Markdown
+1.2.9 显示安装细节	linux笔记/linux操作.md	/^#### 1.2.9 显示安装细节$/;"	t	language:Markdown
+1.3 dpkg包管理	linux笔记/linux操作.md	/^### 1.3 dpkg包管理$/;"	S	language:Markdown
+1.3.1 安装软件包	linux笔记/linux操作.md	/^#### 1.3.1 安装软件包$/;"	t	language:Markdown
+1.3.2 卸载软件包	linux笔记/linux操作.md	/^#### 1.3.2 卸载软件包$/;"	t	language:Markdown
+1.3.3 使用dkpg查看软件包	linux笔记/linux操作.md	/^#### 1.3.3 使用dkpg查看软件包$/;"	t	language:Markdown
+1.3.4 列出该包所包含的文件	linux笔记/linux操作.md	/^#### 1.3.4 列出该包所包含的文件$/;"	t	language:Markdown
+1.3.5 查看文件所属的那个包	linux笔记/linux操作.md	/^#### 1.3.5 查看文件所属的那个包$/;"	t	language:Markdown
+1.3.6 列出deb包中的所有文件	linux笔记/linux操作.md	/^#### 1.3.6 列出deb包中的所有文件$/;"	t	language:Markdown
+1、git checkout 与git reset的区别	git笔记/GitHub入门与实践笔记.md	/^# 1、git checkout 与git reset的区别$/;"	c	language:Markdown
+2、使用difftool和mergetool打开vscode比较差异	git笔记/GitHub入门与实践笔记.md	/^# 2、使用difftool和mergetool打开vscode比较差异$/;"	c	language:Markdown
+3、使用.gitignore忽略不需要git管理的文件	git笔记/GitHub入门与实践笔记.md	/^# 3、使用.gitignore忽略不需要git管理的文件$/;"	c	language:Markdown
+4)合并main分支	git笔记/GitHub入门与实践笔记.md	/^	4)合并main分支$/;"	s	language:Markdown
+4.1.CAN FD模块初始化设置	文档阅读/CAN-FD基础知识.md	/^### 4.1.CAN FD模块初始化设置$/;"	S	language:Markdown
+4.2.发送CAN FD报文	文档阅读/CAN-FD基础知识.md	/^### 4.2.发送CAN FD报文$/;"	S	language:Markdown
+4.3.定时接收指定ID的CAN FD报文	文档阅读/CAN-FD基础知识.md	/^### 4.3.定时接收指定ID的CAN FD报文$/;"	S	language:Markdown
+4.4.CAN FD通信演示	文档阅读/CAN-FD基础知识.md	/^### 4.4.CAN FD通信演示$/;"	S	language:Markdown
+4、抓取、处理冲突、合并过程	git笔记/GitHub入门与实践笔记.md	/^# 4、抓取、处理冲突、合并过程$/;"	c	language:Markdown
+5.1.ISO CAN FD与non-ISO CAN FD的兼容性	文档阅读/CAN-FD基础知识.md	/^### 5.1.ISO CAN FD与non-ISO CAN FD的兼容性$/;"	S	language:Markdown
+5.2.CAN FD与传统CAN的兼容性	文档阅读/CAN-FD基础知识.md	/^### 5.2.CAN FD与传统CAN的兼容性$/;"	S	language:Markdown
+AF_PACKET：用于直接访问网络层，通常用于创建原始套接字以接收或发送链路层帧。	网络编程/网络笔记.md	/^        AF_PACKET：用于直接访问网络层，通常用于创建原始套接字以接收或发/;"	s	language:Markdown
+CAN FD基础知识	文档阅读/CAN-FD基础知识.md	/^# CAN FD基础知识$/;"	c	language:Markdown
+CAN FD基础知识	文档阅读/CAN-FD基础知识.md	/^CAN FD基础知识$/;"	c	language:Markdown
+CAN_MESSAGE	tsn_send_receive/TSN_send_timestamp.c	/^#define CAN_MESSAGE /;"	d	language:C	file:
+CAN基础知识	文档阅读/CAN-FD基础知识.md	/^# CAN基础知识$/;"	c	language:Markdown
+Diff	git笔记/GitHub入门与实践笔记.md	/^### Diff$/;"	S	language:Markdown
+ETH_P_DEAN	tsn_send_receive/TSN_recv_timestamp.c	/^#define ETH_P_DEAN /;"	d	language:C	file:
+ETH_P_DEAN	tsn_send_receive/TSN_send_timestamp.c	/^#define ETH_P_DEAN /;"	d	language:C	file:
+HEAD/分支名:查看工作树与本地仓库的差异，若为空表示工作树与暂存区的差异	git笔记/GitHub入门与实践笔记.md	/^	HEAD\/分支名:查看工作树与本地仓库的差异，若为空表示工作树与暂存区的/;"	s	language:Markdown
+HEAD和分支的区别	git笔记/GitHub入门与实践笔记.md	/^# HEAD和分支的区别$/;"	c	language:Markdown
+Linux中使用GDB调试程序	linux笔记/linux操作.md	/^# Linux中使用GDB调试程序$/;"	c	language:Markdown
+Merge	git笔记/GitHub入门与实践笔记.md	/^### Merge$/;"	S	language:Markdown
+OUT	网络编程/实践/9.3/Makefile	/^OUT = $(OUT_DIR)\/send$/;"	m	language:Make
+OUT_DIR	网络编程/实践/9.3/Makefile	/^OUT_DIR = .\/out$/;"	m	language:Make
+RTA of cross-domain end-to-end communication	文档阅读/Response Time Evaluation of Cross-Domain Communication笔记.md	/^### RTA of cross-domain end-to-end communication$/;"	S	language:Markdown
+SRC	网络编程/实践/9.3/Makefile	/^SRC = send.c$/;"	m	language:Make
+```	git笔记/GitHub入门与实践笔记.md	/^```$/;"	s	language:Markdown
+abstract:	文档阅读/Response Time Evaluation of Cross-Domain Communication笔记.md	/^### abstract:$/;"	S	language:Markdown
+all	网络编程/实践/9.3/Makefile	/^all: $(OUT)$/;"	t	language:Make
+apt命令	linux笔记/linux操作.md	/^## apt命令$/;"	s	language:Markdown
+architecture and models	文档阅读/Response Time Evaluation of Cross-Domain Communication笔记.md	/^### architecture and models$/;"	S	language:Markdown
+bind	网络编程/网络笔记.md	/^### bind$/;"	S	language:Markdown
+cat命令	linux笔记/linux操作.md	/^## cat命令$/;"	s	language:Markdown
+clean	网络编程/实践/9.3/Makefile	/^clean:$/;"	t	language:Make
+cstdlib	.vscode/settings.json	/^        "cstdlib": "c",$/;"	s	language:JSON	object:files.associations
+dd命令	linux笔记/linux操作.md	/^## dd命令$/;"	s	language:Markdown
+dd和cp的区别	linux笔记/linux操作.md	/^### dd和cp的区别$/;"	S	language:Markdown
+dpkg和rpm常识	linux笔记/linux操作.md	/^## dpkg和rpm常识$/;"	s	language:Markdown
+echo命令	linux笔记/linux操作.md	/^## echo命令$/;"	s	language:Markdown
+experimental results	文档阅读/Response Time Evaluation of Cross-Domain Communication笔记.md	/^### experimental results$/;"	S	language:Markdown
+export命令	linux笔记/linux操作.md	/^## export命令$/;"	s	language:Markdown
+fdisk命令	linux笔记/linux操作.md	/^## fdisk命令$/;"	s	language:Markdown
+files.associations	.vscode/settings.json	/^    "files.associations": {$/;"	o	language:JSON
+fstream	.vscode/settings.json	/^        "fstream": "c",$/;"	s	language:JSON	object:files.associations
+future	.vscode/settings.json	/^        "future": "c",$/;"	s	language:JSON	object:files.associations
+gcc版本控制	linux笔记/linux操作.md	/^# gcc版本控制$/;"	c	language:Markdown
+gcc预处理、编译、汇编、链接	linux笔记/linux操作.md	/^## gcc预处理、编译、汇编、链接$/;"	s	language:Markdown
+git add	git笔记/GitHub入门与实践笔记.md	/^# git add$/;"	c	language:Markdown
+git branch [分支] [-a]	git笔记/GitHub入门与实践笔记.md	/^# git branch [分支] [-a]$/;"	c	language:Markdown
+git checkout [-b] <分支/commit_hash/HEAD^> <origin/feature-D>	git笔记/GitHub入门与实践笔记.md	/^# git checkout [-b] <分支\/commit_hash\/HEAD^> <origin\/feature-D>$/;"	c	language:Markdown
+git clone [-b/--branch] [branch_name] git@github.com:用户名/该用户下的仓库名.git	git笔记/GitHub入门与实践笔记.md	/^# git clone [-b\/--branch] [branch_name] git@github.com:用户名\/该用户下的仓库名.git$/;"	c	language:Markdown
+git commit -m ["说明"]	git笔记/GitHub入门与实践笔记.md	/^# git commit -m ["说明"]$/;"	c	language:Markdown
+git diff的使用	git笔记/GitHub入门与实践笔记.md	/^# git diff的使用$/;"	c	language:Markdown
+git log [-p] [filename] [--graphy/--oneline] [origin/main..HEAD]	git笔记/GitHub入门与实践笔记.md	/^# git log [-p] [filename] [--graphy\/--oneline] [origin\/main..HEAD]$/;"	c	language:Markdown
+git push [-u/--set-upstream][remote] [branch]	git笔记/GitHub入门与实践笔记.md	/^# git push [-u\/--set-upstream][remote] [branch]$/;"	c	language:Markdown
+git status	git笔记/GitHub入门与实践笔记.md	/^# git status $/;"	c	language:Markdown
+github上创建仓库,默认仓库地址：https://github.com/用户名/仓库名	git笔记/GitHub入门与实践笔记.md	/^# github上创建仓库,默认仓库地址：https:\/\/github.com\/用户名\/仓库名$/;"	c	language:Markdown
+introduction:	文档阅读/Response Time Evaluation of Cross-Domain Communication笔记.md	/^### introduction:$/;"	S	language:Markdown
+io_context	.vscode/settings.json	/^        "io_context": "c",$/;"	s	language:JSON	object:files.associations
+linux下一些目录作用	linux笔记/linux操作.md	/^## linux下一些目录作用$/;"	s	language:Markdown
+linux下的一些命令操作	linux笔记/linux操作.md	/^# linux下的一些命令操作$/;"	c	language:Markdown
+linux中文件后缀	linux笔记/linux操作.md	/^## linux中文件后缀$/;"	s	language:Markdown
+linux的其他知识（常识）	linux笔记/linux操作.md	/^# linux的其他知识（常识）$/;"	c	language:Markdown
+linux进入root的方法	linux笔记/linux操作.md	/^## linux进入root的方法$/;"	s	language:Markdown
+ls命令	linux笔记/linux操作.md	/^## ls命令$/;"	s	language:Markdown
+main	can_send_receive/can_read.c	/^int main(void)$/;"	f	language:C	typeref:typename:int	signature:(void)
+main	can_send_receive/can_write.c	/^int main(void)$/;"	f	language:C	typeref:typename:int	signature:(void)
+main	tsn_send_receive/TSN_recv_timestamp.c	/^int main(int argc, char **argv)$/;"	f	language:C	typeref:typename:int	signature:(int argc,char ** argv)
+main	tsn_send_receive/TSN_send_timestamp.c	/^int main(int argc, char **argv)$/;"	f	language:C	typeref:typename:int	signature:(int argc,char ** argv)
+main	网络编程/实践/9.3/send.c	/^int main(int argc, char const *argv[]){$/;"	f	language:C	typeref:typename:int	signature:(int argc,char const * argv[])
+makefile是什么	linux笔记/linux操作.md	/^# makefile是什么$/;"	c	language:Markdown
+mount\\unmount命令	linux笔记/linux操作.md	/^## mount\\unmount命令$/;"	s	language:Markdown
+offset	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+offset	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+offset_ns	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+offset_ns	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+offset_s	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+offset_s	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+ps命令	linux笔记/linux操作.md	/^## ps命令$/;"	s	language:Markdown
+ps和top的区别	linux笔记/linux操作.md	/^### ps和top的区别$/;"	S	language:Markdown
+read_ns	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+read_ns	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+read_s	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+read_s	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+recvfrom	网络编程/网络笔记.md	/^### recvfrom$/;"	S	language:Markdown
+rm命令	linux笔记/linux操作.md	/^## rm命令$/;"	s	language:Markdown
+sendto	网络编程/网络笔记.md	/^### sendto$/;"	S	language:Markdown
+socket	.vscode/settings.json	/^        "socket": "c",$/;"	s	language:JSON	object:files.associations
+socket 套接口数据结构	网络编程/网络笔记.md	/^## socket 套接口数据结构$/;"	s	language:Markdown
+socket函数	网络编程/网络笔记.md	/^# socket函数$/;"	c	language:Markdown
+ssh公钥和私钥原理	linux笔记/linux操作.md	/^## ssh公钥和私钥原理$/;"	s	language:Markdown
+ssh应用	linux笔记/linux操作.md	/^## ssh应用$/;"	s	language:Markdown
+ssh服务器	linux笔记/linux操作.md	/^# ssh服务器$/;"	c	language:Markdown
+sudo命令	linux笔记/linux操作.md	/^## sudo命令$/;"	s	language:Markdown
+system_error	.vscode/settings.json	/^        "system_error": "c"$/;"	s	language:JSON	object:files.associations
+temp1	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+temp1	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+temp2	tsn_send_receive/TSN_recv_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+temp2	tsn_send_receive/TSN_send_timestamp.c	/^int read_s, read_ns, offset_s, offset_ns, offset, temp1, temp2;$/;"	v	language:C	typeref:typename:int
+tftp服务器	linux笔记/linux操作.md	/^# tftp服务器$/;"	c	language:Markdown
+time_t1	tsn_send_receive/TSN_recv_timestamp.c	/^struct timespec time_t1={0, 0},time_t2={0, 0},time_t3={0, 0},time_t4={0, 0},time_now={0, 0},time/;"	v	language:C	typeref:struct:timespec
+time_t1	tsn_send_receive/TSN_send_timestamp.c	/^struct timespec time_t1={0, 0},time_t2={0, 0},time_t3={0, 0},time_t4={0, 0},time_now={0, 0},time/;"	v	language:C	typeref:struct:timespec
+timestamp_t1ns	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t1ns	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t1s	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t1s	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t2ns	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t2ns	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t2s	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t2s	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t3ns	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t3ns	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t3s	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t3s	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t4ns	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t4ns	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t4s	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_t4s	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_tnowns	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_tnowns	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_tnows	tsn_send_receive/TSN_recv_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+timestamp_tnows	tsn_send_receive/TSN_send_timestamp.c	/^int timestamp_t1s, timestamp_t1ns, timestamp_t2s, timestamp_t2ns, timestamp_t3s, timestamp_t3ns,/;"	v	language:C	typeref:typename:int
+whereis命令	linux笔记/linux操作.md	/^## whereis命令$/;"	s	language:Markdown
+}	linux笔记/linux操作.md	/^}$/;"	s	language:Markdown
+一.CAN FD消息帧	文档阅读/CAN-FD基础知识.md	/^## 一.CAN FD消息帧$/;"	s	language:Markdown
+一、密码登录	linux笔记/linux操作.md	/^#### 一、密码登录$/;"	t	language:Markdown
+一些运维操作（git）	linux笔记/linux操作.md	/^# 一些运维操作（git）$/;"	c	language:Markdown
+三.CAN FD与传统CAN的区别	文档阅读/CAN-FD基础知识.md	/^## 三.CAN FD与传统CAN的区别$/;"	s	language:Markdown
+不建议、不自动卸载依赖它的包	linux笔记/linux操作.md	/^# 不建议、不自动卸载依赖它的包$/;"	c	language:Markdown
+个人学习记录	README.md	/^# 个人学习记录$/;"	c	language:Markdown
+二.CAN FD位填充	文档阅读/CAN-FD基础知识.md	/^## 二.CAN FD位填充$/;"	s	language:Markdown
+二、公钥登录	linux笔记/linux操作.md	/^#### 二、公钥登录$/;"	t	language:Markdown
+五.CAN FD的兼容性	文档阅读/CAN-FD基础知识.md	/^## 五.CAN FD的兼容性$/;"	s	language:Markdown
+代码块	必备小技能/markdown语法.md	/^# 代码块$/;"	c	language:Markdown
+以下添加环境变量	linux笔记/linux操作.md	/^# 以下添加环境变量$/;"	c	language:Markdown
+使用dd命令制作启动盘	linux笔记/linux操作.md	/^### 使用dd命令制作启动盘$/;"	S	language:Markdown
+使用dd命令备份磁盘数据	linux笔记/linux操作.md	/^### 使用dd命令备份磁盘数据$/;"	S	language:Markdown
+使用示例	git笔记/GitHub入门与实践笔记.md	/^## 使用示例$/;"	s	language:Markdown
+僵尸进程、孤儿进程和守护进程	linux笔记/linux操作.md	/^### 僵尸进程、孤儿进程和守护进程$/;"	S	language:Markdown
+六.CAN FD的前景	文档阅读/CAN-FD基础知识.md	/^## 六.CAN FD的前景$/;"	s	language:Markdown
+准备工作	git笔记/GitHub入门与实践笔记.md	/^## 准备工作$/;"	s	language:Markdown
+分支操作	git笔记/GitHub入门与实践笔记.md	/^# 分支操作$/;"	c	language:Markdown
+删除包（包括配置文件）	linux笔记/linux操作.md	/^# 删除包（包括配置文件）$/;"	c	language:Markdown
+前台与后台进程切换	linux笔记/linux操作.md	/^# 前台与后台进程切换$/;"	c	language:Markdown
+前言	git笔记/GitHub入门与实践笔记.md	/^## 前言$/;"	s	language:Markdown
+加粗/斜体	必备小技能/markdown语法.md	/^# 加粗\/斜体$/;"	c	language:Markdown
+协程的概念	linux笔记/linux操作.md	/^# 协程的概念$/;"	c	language:Markdown
+压缩文件或目录	linux笔记/linux操作.md	/^### 压缩文件或目录$/;"	S	language:Markdown
+和./etc/profile类似都是执行文件profile中的语句	linux笔记/linux操作.md	/^# 和.\/etc\/profile类似都是执行文件profile中的语句$/;"	c	language:Markdown
+四.使用控制器收发CAN FD报文	文档阅读/CAN-FD基础知识.md	/^## 四.使用控制器收发CAN FD报文$/;"	s	language:Markdown
+回到原目录1，进行pull操作更新信息	git笔记/GitHub入门与实践笔记.md	/^# 回到原目录1，进行pull操作更新信息$/;"	c	language:Markdown
+图像放在imgs文件夹，文件不要直接放在根目录，新建文件夹发在新建文件夹里面，图像指定../imgs即	README.md	/^## 图像放在imgs文件夹，文件不要直接放在根目录，新建文件夹发在新建文/;"	s	language:Markdown
+在linux中使用vim	linux笔记/linux操作.md	/^# 在linux中使用vim$/;"	c	language:Markdown
+基于TCP的常用收发函数	网络编程/网络笔记.md	/^## 基于TCP的常用收发函数$/;"	s	language:Markdown
+基于UDP的常用收发函数	网络编程/网络笔记.md	/^## 基于UDP的常用收发函数$/;"	s	language:Markdown
+基础知识	文档阅读/Response Time Evaluation of Cross-Domain Communication笔记.md	/^### 基础知识$/;"	S	language:Markdown
+基础知识	网络编程/网络笔记.md	/^# 基础知识$/;"	c	language:Markdown
+基础设置	git笔记/GitHub入门与实践笔记.md	/^# 基础设置$/;"	c	language:Markdown
+复制单个文件	linux笔记/linux操作.md	/^### 复制单个文件$/;"	S	language:Markdown
+复制命令cp	linux笔记/linux操作.md	/^## 复制命令cp$/;"	s	language:Markdown
+多人协同远程仓库基础	git笔记/GitHub入门与实践笔记.md	/^# 多人协同远程仓库基础$/;"	c	language:Markdown
+大小端/网络主机 字节序	网络编程/网络笔记.md	/^# 大小端\/网络主机 字节序$/;"	c	language:Markdown
+大端序和小端序	网络编程/网络笔记.md	/^### 大端序和小端序$/;"	S	language:Markdown
+守护线程的实现	linux笔记/linux操作.md	/^# 守护线程的实现$/;"	c	language:Markdown
+守护进程实现	linux笔记/linux操作.md	/^### 守护进程实现$/;"	S	language:Markdown
+工具	网络编程/网络笔记.md	/^# 工具$/;"	c	language:Markdown
+引用	必备小技能/markdown语法.md	/^# 引用$/;"	c	language:Markdown
+抓包工具Wireshark	网络编程/网络笔记.md	/^## 抓包工具Wireshark$/;"	s	language:Markdown
+新建目录1将本地仓库推送到新的远程仓库	git笔记/GitHub入门与实践笔记.md	/^# 新建目录1将本地仓库推送到新的远程仓库$/;"	c	language:Markdown
+新建目录2，从远程仓库克隆，修改信息，push提交	git笔记/GitHub入门与实践笔记.md	/^# 新建目录2，从远程仓库克隆，修改信息，push提交$/;"	c	language:Markdown
+方法一	git笔记/GitHub入门与实践笔记.md	/^# 方法一$/;"	c	language:Markdown
+方法二	git笔记/GitHub入门与实践笔记.md	/^# 方法二$/;"	c	language:Markdown
+有序/无序/定义/任务列表	必备小技能/markdown语法.md	/^# 有序\/无序\/定义\/任务列表$/;"	c	language:Markdown
+查看归档文件内容	linux笔记/linux操作.md	/^### 查看归档文件内容$/;"	S	language:Markdown
+标题	必备小技能/markdown语法.md	/^# 标题$/;"	c	language:Markdown
+此为注释 – 将被 Git 忽略	git笔记/GitHub入门与实践笔记.md	/^# 此为注释 – 将被 Git 忽略$/;"	c	language:Markdown
+特殊符号使用	linux笔记/linux操作.md	/^## 特殊符号使用$/;"	s	language:Markdown
+网络四层	网络编程/网络笔记.md	/^## 网络四层$/;"	s	language:Markdown
+网络字节序和主机字节序	网络编程/网络笔记.md	/^### 网络字节序和主机字节序$/;"	S	language:Markdown
+网络字节序转换函数(htons)	网络编程/网络笔记.md	/^### 网络字节序转换函数(htons)$/;"	S	language:Markdown
+网络编程	网络编程/网络笔记.md	/^# 网络编程$/;"	c	language:Markdown
+网络调试助手NetAssist	网络编程/网络笔记.md	/^## 网络调试助手NetAssist$/;"	s	language:Markdown
+解压命令tar	linux笔记/linux操作.md	/^## 解压命令tar$/;"	s	language:Markdown
+解压文件	linux笔记/linux操作.md	/^### 解压文件$/;"	S	language:Markdown
+这些协议族定义了套接字可以使用的地址格式和通信范围。根据你的应用程序需要连接的网络类型，你会选择合适的协议族。例如，如果你正在编写一个需要与互联网上的其他主机通信的应用程序，你会使用 AF_INET 或 AF_INET6。如果你正在编写一个在同一台机器上的进程间进行通信的应用程序，你可能会使用 AF_UNIX。	网络编程/网络笔记.md	/^这些协议族定义了套接字可以使用的地址格式和通信范围。根据你的应用/;"	s	language:Markdown
+配置命令	git笔记/GitHub入门与实践笔记.md	/^## 配置命令$/;"	s	language:Markdown
+问题	文档阅读/CAN-FD基础知识.md	/^# 问题$/;"	c	language:Markdown
+默认remote为origin，branch为当前分支	git笔记/GitHub入门与实践笔记.md	/^	默认remote为origin，branch为当前分支$/;"	s	language:Markdown

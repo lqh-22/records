@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "cstdlib": "c",
+        "future": "c",
+        "*.tcc": "c",
+        "io_context": "c",
+        "socket": "c",
+        "fstream": "c",
+        "system_error": "c",
+        "string.h": "c"
+    }
+}
