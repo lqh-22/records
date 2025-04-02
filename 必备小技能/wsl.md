@@ -61,7 +61,7 @@
 在WSL中输入以下命令安装vscode
 
 ```
-code -install-extension ms-vscode-remote.remote-wsl
+code
 ```
 
 在WSL中进入项目下，直接使用code .可打开文件
@@ -73,4 +73,25 @@ code -install-extension ms-vscode-remote.remote-wsl
 3. 使用文件菜单打开您的文件夹。
 
 
+
+# 解决WSL代理问题
+
+**问题描述：**
+
+```
+wsl: 检测到 localhost 代理配置，但未镜像到 WSL。NAT 模式下的 WSL 不支持 localhost 代理。
+```
+
+**解决方法：**
+
+在win的/users/username/下添加.wslconfig文件，加入以下
+
+```
+[experimental]
+autoMemoryReclaim=gradual  
+networkingMode=mirrored
+dnsTunneling=true
+firewall=true
+autoProxy=true
+```
 
