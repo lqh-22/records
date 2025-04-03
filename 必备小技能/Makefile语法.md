@@ -480,6 +480,41 @@ make: Leaving directory `/home/ccinn/gnu/make'
 3、$^	所有不重复的依赖文件，空格隔开
 ```
 
+## 自定义变量⭐
+
+```makefile
+# 编译器
+CC = gcc
+# 目标文件列表
+OBJS = sertalker.o
+# 编译选项，直接指定头文件搜索路径
+CFLAGS = -g -Wall -I/path/to/include1 -I/path/to/include2
+# 链接选项，直接指定库搜索路径并链接相关库
+LDFLAGS = -L/path/to/library1 -L/path/to/library2 -lpthread -lotherlib
+# 最终生成的可执行文件
+TARGET = sertalker
+
+# 默认目标，当执行 make 命令时，会执行该目标
+all: $(TARGET)
+
+# 链接目标文件生成可执行文件
+$(TARGET): $(OBJS)
+    $(CC) $(OBJS) $(LDFLAGS) -o $(TARGET)
+
+# 编译源文件生成目标文件
+%.o: %.c
+    $(CC) $(CFLAGS) -c $< -o $@
+
+# 清理规则，删除生成的目标文件和可执行文件
+clean:
+    rm -f $(OBJS) $(TARGET)
+
+# 声明伪目标，避免与同名文件冲突
+.PHONY: all clean
+```
+
+
+
 
 
 # GDB调试

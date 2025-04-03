@@ -298,6 +298,17 @@ source /etc/profile
 
 
 
+## 管道命令 |
+
+```bash
+1、ifconfig准确打印ip地址
+	ifconfig | grep inet | head -n 1 | awk '{print $2}'
+		head -n 1：取数据的第一行
+		awk '{print $2}'：取数据的第二列
+```
+
+
+
 ## dd命令
 
 dd命令的基本语法如下：
@@ -826,9 +837,13 @@ Learn more:
 
 4. **-l**: 该选项用于链接库文件。您需要去掉库文件名前的 `lib` 和后缀 `.so`。例如，如果库文件名为 `libmylib.so`，则使用 `-lmylib`。
 
-5. **-o** : 该选项用于指定输出文件的名称。默认情况下，`gcc` 会生成名为 `a.out` 的可执行文件。
+5. **-I（-i的大写）：**用于指定头文件路径
 
-6. **-Wl,-rpath,**: 该选项用于设置运行时库搜索路径，确保在运行时能够找到动态库。
+6. **-o** : 该选项用于指定输出文件的名称。默认情况下，`gcc` 会生成名为 `a.out` 的可执行文件。
+
+7. **-Wl,-rpath,**: 该选项用于设置运行时库搜索路径，确保在运行时能够找到动态库。
+
+8. **-O、-O2、-O3**，编译优化，提升运行速度，但会增加编译时间
 
 通过合理使用这些选项，您可以轻松地创建和管理动态链接库，从而提高程序的灵活性和可维护性。
 
@@ -1346,3 +1361,20 @@ int main(void)
 ![image](../imgs/6765e36cc4604fba897976638af03524.jpeg)
 
 把协程理解为用户级线程，即用户可以操作的线程，那么可以在协程IO阻塞时程序员进行异步操作操作
+
+
+
+# 工具函数
+
+## 获得当前时间
+
+```c
+char time_str[64];  // 存储目前时间
+char *getTime() {
+    time_t now = time(NULL);
+    struct tm *local_time = localtime(&now);
+    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
+    return time_str;
+}
+```
+

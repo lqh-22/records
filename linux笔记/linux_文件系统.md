@@ -23,6 +23,8 @@ mount -t type mountpoint device -o options
 
 # 文件系统通用操作
 
+## 不带缓存的文件I/O操作
+
 **1、文件描述符**
 
 - 在linux系统中有三个已经分配的文件描述符，即标准输入(0)、标注输出(1)和标准错误(2)，分别在/dev/stdin、/dev/stdout和/dev/stderr
@@ -112,3 +114,10 @@ mount -t type mountpoint device -o options
 	request：具体看驱动
 ```
 
+
+
+## 带缓存的流文件I/O操作
+
+TODO：
+
+fopen
