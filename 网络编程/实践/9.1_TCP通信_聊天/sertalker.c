@@ -26,6 +26,7 @@ typedef struct {
 char sendBuf[200] = "", recvBuf[200] = "";
 char time_str[64];  // 存储目前时间
 FILE *fp; // 文件指针，用于记录聊天信息
+int sockClientFdList[1024], cntList;
 
 void *PthreadRecv(void *arg);  // 新建一个子线程处理recv
 char *getTime();  // 获得目前时间
@@ -37,6 +38,8 @@ void *handleClient(void *args);  // 新建一个子线程处理TCP连接
 - 程序的服务端运行一开始就会有提示，显示自己服务器端主机的IP地址，以方便客户端连接。
 - 程序每次聊天信息的发出都会附加上时间，并且退出后会有聊天的记录和退出的记录。
 - 程序中使用了多线程的方法，解决了程序阻塞的问题，使得聊天程序不用等待（回答和响应可同时运行）。
+多线程进行recv和send，存在的问题：
+    对于服务端的send，只有一个线程可以fgets输入，其他线程无法输入。
 */
 int main(int argc, char const *argv[]) {
     if (argc != 1 && argc != 3) {
@@ -94,6 +97,7 @@ int main(int argc, char const *argv[]) {
                 fprintf(stderr, "[%s] fail to accept\n", getTime());
                 continue;
             }
+            sockClientFdList[cntList++] = sockClientFd;
             //向客户端发送连接成功的消息，本地打印远程连接客户端的IP地址
             fprintf(stdout, "[%s] 成功连接到客户端：%s:%d\n", getTime(), inet_ntoa(sockClient.sin_addr), ntohs(sockClient.sin_port));
             strcpy(sendBuf, "成功连接到服务器");
@@ -220,10 +224,24 @@ void *PthreadRecv(void *arg) {
             fprintf(stdout, "[%s] 对方(%s)已退出\n", getTime(), args.ip);
             fprintf(fp, "[%s] 对方(%s)已退出\n", getTime(), args.ip);
             fflush(fp);  // 实时刷新文件
-            exit(0);  // 子线程不需要关闭文件，因为主线程要用
+            // 将list同步置为-1
+            for (int i = 0; i < cntList; ++i) {
+                if (sockClientFdList[i] == args.sockFd) {
+                    sockClientFdList[i] = -1;
+                    break;
+                }
+            }
+            break;  // 子线程不需要关闭文件，因为主线程要用
         } else {
             str[recvBytes] = '\0';
             fprintf(stdout, "[%s] %s(%s): %s\n", getTime(), args.ip, args.type, str);
+            //同步到聊天框
+            for (int i = 0; i < cntList; ++i) {
+                if (sockClientFdList[i] != -1 && (send(sockClientFdList[i], str, sizeof(str), 0)) == -1) {
+                    fprintf(stderr, "[%s] faile to send\n", getTime());
+                    exit(1);
+                }
+            }
             // 记录聊天信息到文件
             fprintf(fp, "[%s] %s(%s): %s\n", getTime(), args.ip, args.type, str);
             fflush(fp);  // 实时刷新文件
@@ -258,9 +276,11 @@ void *handleClient(void *arg) {
         // 记录聊天信息到文件
         fprintf(fp, "[%s] %s(%s): %s\n", getTime(), inet_ntoa(sockClient.sin_addr), args.type, sendBuf);
         fflush(fp);  // 实时刷新文件
-        if ((send(sockClientFd, sendBuf, sizeof(sendBuf), 0)) == -1) {
-            fprintf(stderr, "[%s] faile to send\n", getTime());
-            exit(1);
+        for (int i = 0; i < cntList; ++i) {
+            if (sockClientFdList[i] != -1 && (send(sockClientFdList[i], sendBuf, sizeof(sendBuf), 0)) == -1) {
+                fprintf(stderr, "[%s] faile to send\n", getTime());
+                exit(1);
+            }
         }
         if (strcmp(sendBuf, EXIT) == 0) {
             fprintf(stdout, "[%s] 服务端已退出\n", getTime());
@@ -269,6 +289,8 @@ void *handleClient(void *arg) {
             break;
         }
     }
-    close(sockClientFd);
+    for (int i = 0; i < cntList; ++i) 
+        if (sockClientFdList[i] != -1)
+            close(sockClientFdList[i]);
     pthread_exit((void *)1);
 }

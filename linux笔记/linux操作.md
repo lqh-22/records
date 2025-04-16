@@ -269,6 +269,9 @@ export PATH=/.../.../bin:$PATH
 
 可通过以下方法永久添加系统环境变量（需要root权限，针对所用用户，永久生效）
 
+- 也可使用sudo visudo目录添加sudo用户的环境变量
+- export -p查看全部环境变量 
+
 ```
 sudo passwd root # 输入当前用户密码
 su # 进入root用户
@@ -1017,6 +1020,38 @@ RPM与DPKG只能做到检查相依性，在安装或移除时告知相依性的�
 	卸载内核模块: rmmod modename
 	查看已经装入的模块信息: lsmode
 ```
+
+## 新增环境变量⭐
+
+**在~/.bashrc和/etc/profile中可添加函数，在命令行可直接执行该函数**
+
+- 只为sudo添加环境变量
+
+  ```
+  #sudo visudo
+  	进入/etc/sudoers的nano界面
+  	在Defaults secure_path下添加可执行文件的目录
+  ```
+
+- 只为当前用户添加环境变量
+
+  ```
+  临时生效：export MY_VARIABLE="my_value"
+  永久生效：
+  	nano ~/.bashrc
+  	export MY_VARIABLE="my_value"
+  	source ~/.bashrc
+  ```
+
+- 针对所有用户
+
+  ```
+  修改/etc/profile文件
+  sudo nano /etc/profile
+  export MY_VARIABLE="my_value"
+  ```
+
+  
 
 
 

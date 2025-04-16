@@ -11,6 +11,10 @@
         "inet.h": "c",
         "in.h": "c",
         "socket.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "winsock2.h": "c",
+        "if.h": "c"
     }
 }
