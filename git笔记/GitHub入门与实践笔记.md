@@ -312,3 +312,51 @@ $ cat .gitignore
 
 
 # https://ww-rm.github.io/posts/2024/01/17/githubssh-timeout/
+
+
+
+
+
+# 实践
+
+## git删除误提交的大文件历史记录
+
+**1.列出所有仓库中的对象（包括SHA值、大小、路径等），并按照大小降序排列，列出TOP 20：**
+
+```
+$ git rev-list --all | xargs -rL1 git ls-tree -r --long | sort -uk3 | sort -rnk4 | head -20
+```
+
+**2.找到需要删除的提交记录，7c76c446f6e5dde511ec259735783beca93cd11d是它的 id。找出该记录对应的文件，执行以下命令：**
+
+```
+$ git rev-list --objects --all | grep 7c76c446f6e5dde511ec259735783beca93cd11d
+```
+
+**3.既然文件找到了，那么得将该文件从历史记录中删除，执行以下命令：**
+
+```
+$ git log --pretty=oneline --branches --  release/2.2.9/加签/app-Vmeng-release_2.2.9_35_signed.apk
+```
+
+**4.上面的命令执行后只是从历史记录中移除，还没有完全删除它，我们需要重写所有 commit，将该文件从 Git 历史中完全删除：**
+
+```
+$ git filter-branch --index-filter 'git rm --cached --ignore-unmatch  release/2.2.9/加签/app-Vmeng-release_2.2.9_35_signed.apk' -- --all
+```
+
+**5.上面的命令执行后，此时历史记录中已经没有该文件了，此时是真正删除了它。 不过我们运行 filter-branch 产生的日志还是会对该文件有引用，所以我们还需要运行以下几条命令，把该文件的引用完全删除：**
+
+```
+rm -Rf .git/refs/original //删除git的备份
+rm -Rf .git/logs/ // 删除logs
+git gc //收集所有松散对象并将它们存入 packfile（垃圾回收）
+git prune //删除所有过期的、不可达的且未被打包的松散对象
+```
+
+**6.现在我们再看 .git 文件的大小明显变小了，少了那个大文件，说明我们之前误提交的大文件已经删除了。 最后一步就是 push 代码了，不过就是需要强制 push：**
+
+```
+$ git push --force
+```
+
