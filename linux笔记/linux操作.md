@@ -1,6 +1,6 @@
 # linux下的一些命令操作
 
-## 解压命令tar
+## 压缩解压命令tar
 
 在[Linux系统](https://so.csdn.net/so/search?q=Linux系统&spm=1001.2101.3001.7020)中，`tar`[命令](https://so.csdn.net/so/search?q=命令&spm=1001.2101.3001.7020)用于创建、查看、提取和解压 tar 存档文件。以下是 `tar` 命令的一些常见用法：
 
@@ -11,7 +11,7 @@
 - `-c`: 创建新的归档文件
 - `-z`: 使用 gzip 格式压缩/解压缩
 - `-j`: 使用 bzip2 格式压缩/解压缩
-- `-J`: 使用 xz 格式压缩/解压缩
+- `-J`: 使用 xzip 格式压缩/解压缩
 - `-v`: 显示详细信息
 - `-f`: 指定归档文件名
 
@@ -103,6 +103,14 @@ tar -tvf archive.tar # 查看 .tar 归档文件内容
 2、删除文件夹
 	rmdir dirname # 删除空的文件夹
 	rm -rf dirname # 删除非空文件夹，-r是循环在dirname中删除文件
+```
+
+## find命令
+
+```
+1、find / -name filename
+2、find /
+	输出根路径下所有目录及其文件
 ```
 
 
@@ -312,12 +320,14 @@ source /etc/profile
 
 
 
+
+
 ## dd命令
 
 dd命令的基本语法如下：
 
 dd if=<输入文件> of=<输出文件> [选项]
-1
+
 在这里，if代表输入文件，of代表输出文件。
 
 Linux dd命令的常用选项或参数说明
