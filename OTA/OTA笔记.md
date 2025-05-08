@@ -219,6 +219,25 @@ uint8_t：stdint.h
 
 ---
 
+```
+1：谁将OTA_flag变成对勾？
+A区
+2：什么时候将OTA_flag变成对勾？
+A区下载完毕之后
+3：OTA时，最新版本的程序文件下载到哪？
+分片下载，[256],W25Q64中
+4：OTA时，最新版本的程序文件如何下载？下载多少？
+服务器下发告诉我们上传的新版本程序的大小，字节数
+4+：下载多少这个变量用不用保存？
+用，保存到24C02
+5：发生OTA事件时，B区如何更新A区？
+根据保存在24C02中的下载量，拿数据(每次1024个字节)，写到A区
+```
+
+
+
+---
+
 **OTA的bootloader需要用到哪些功能：**
 
 - **串口：通过串口IAP将bootloader下载到b分区**
@@ -229,8 +248,23 @@ uint8_t：stdint.h
     - 加入位置数组：记录每一次传输数据在缓存中的位置信息，在缓存加入s和e标记每一次传输数据在缓存中的位置
     - 用in记录位置数据的最后一位的下一位，用out记录位置数组首位，In==out表示缓冲区没有数据
 - **IIC 24C02：存放OTA_flage、掉电不丢失**
+  - 256B，一页16B
+  - 读取任意位置，任意字节数量
+
 - **SPI W25Q64：外部flash、掉电不丢失，存放多个固件版本号**
+  - 8MB
+  - 128块，每块64KB
+    - 按块擦除
+
+  - 32768页，每页256B
+    - 按页写入
+
+  - 读取任意位置，任意字节数量
+
 - **FLASH 擦除写入：内部flash的擦除和写入**
+  - 一页1KB
+  - 写入任意内存位置，任意字节数量
+
 
 ## **串口**
 
@@ -1373,11 +1407,11 @@ W25Q64_WaitBusy
 
 <img src="./../imgs/image-20250424160112417.png" alt="image-20250424160112417" style="zoom:50%;" />
 
-图中w25q64有127块，每块有64字节数据，
+图中w25q64有128块，每块有64KB数据，
 
-   最大地址 = 127 * 64 * 1024
+   最大地址 = 128 * 64 * 1024
 
-​     = 127 * 65536
+​     = 128 * 65536
 
 ​     = 8,323,072 (0x7F0000)，只需要24位表示
 
@@ -1662,7 +1696,1077 @@ int main(void){
 ## 构建bootloader程序
 
 - 分区
+  - C8T6：64KB，一页1KB，页号0~63
+  - b区：bootloader程序20K，0~19
+  - a区：程序区，20~63
+
 - ota事件触发、非ota事件触发
+
+
+
+### **flash分区**
+
+- main.h中宏定义
+
+  - 一些关于A，B区的宏定义
+
+  - 关于OTA_flag的声明
+
+    - A区下载完后置位OTA_flag:set(1)，然后重启运行bootloader程序
+    - B区负责重置OTA_flag:reset(0)
+      - 在m24c02中添加读取OTA_flag标签函数
+      - bootloader读取OTA_flag，若为1（表示外部flash的A区可更新）则更新A区，跳转再重置OTA_flag
+      - 需要注意大小端模式
+
+  - 代码
+
+    - ```C
+      #ifndef MAIN_H
+      #define MAIN_H
+      
+      #include "stdint.h"
+      
+      #define  GD32_FLASH_SADDR   0x08000000                                             //FLASH起始地址
+      #define  GD32_PAGE_SIZE     1024                                                   //FLASH扇区大小
+      #define  GD32_PAGE_NUM      64                                                     //FLASH总扇区个数
+      #define  GD32_B_PAGE_NUM    20                                                     //B区扇区个数
+      #define  GD32_A_PAGE_NUM    GD32_PAGE_NUM - GD32_B_PAGE_NUM                        //A区扇区个数
+      #define  GD32_A_START_PAGE  GD32_B_PAGE_NUM                                        //A区起始扇区编号
+      #define  GD32_A_SADDR       GD32_FLASH_SADDR + GD32_A_START_PAGE * GD32_PAGE_SIZE  //FA区起始地址
+      
+      
+      #define OTA_SET_FLAG        0x0c0d0e0f
+      typedef struct{
+      	uint32_t OTA_flag;
+      }OTA_InfoCB;
+      #define OTA_INFOCB_SIZE sizeof(OTA_InfoCB)
+      
+      extern OTA_InfoCB OTA_Info;
+      
+      #endif
+      ```
+
+    - main代码
+
+      - ```c
+        #include "gd32f10x.h"
+        #include "main.h"
+        #include "usart.h"
+        #include "delay.h"
+        #include "fmc.h"
+        #include "iic.h"
+        #include "m24c02.h"
+        #include "boot.h"
+        
+        OTA_InfoCB OTA_Info;
+        uint8_t buff[256];
+        uint8_t txbuff[16] = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};;
+        int main(void){
+        	
+        	Delay_Init();
+        	Usart0_Init(921600);
+          	IIC_Init();
+        	M24C02_WritePage(0, txbuff);
+        	Delay_Ms(5);
+        	M24C02_ReadData(0, buff, sizeof(buff));
+        	for (int i = 0; i < 256; ++i)
+        		u0_printf("%d:%x\r\n", i, buff[i]);
+        	M24C02_ReadOTAInfo();
+        	BootLoader_Brance();
+        	
+        	while(1){
+        
+        	}
+        }
+        ```
+
+        
+
+- HW下boot.c/boot.h
+
+  - bootloader读取OTA_flag，若为1（表示外部flash的A区可更新）则更新A区，跳转再重置OTA_flag
+
+  - 若为0则跳转
+
+  - 代码
+
+    - ```c
+      #include "gd32f10x.h"
+      #include "boot.h"
+      #include "main.h"
+      #include "usart.h"
+      #include "delay.h"
+      #include "fmc.h"
+      #include "iic.h"
+      #include "m24c02.h"
+      
+      void BootLoader_Brance(void){
+      	if(OTA_Info.OTA_flag == OTA_SET_FLAG){
+      		u0_printf("OTA更新\r\n");
+      	}else{
+      		u0_printf("跳转A分区\r\n");
+      	}
+      }
+      ```
+
+      
+
+
+
+**bootloader跳转的SP指针和PC指针设置**
+
+可以理解将A区的中断向量表值覆盖到B区上，形成跳转
+
+- 看Cortax-M3芯片寄存器
+  - 设置SP(堆栈)指针（R13寄存器）
+    - 找到A区的起始地址（0x08005000），中断向量表放在起始位置，向量表第一个成员存放__initial_sp初始值
+      - 即把0x08005000存的值给到sp指针
+  - 设置PC（程序计数器）指针(R15寄存器)
+    - 复位向量，中断向量表的第二个成员
+    - 将向量表的第二个成员给到PC，0x08005000 + 4存的值
+  - B区用到的外设，寄存器reset
+
+<img src="./../imgs/image-20250425170358843.png" alt="image-20250425170358843" style="zoom:50%;" />
+
+
+
+
+
+**流程**
+
+- 在boot编写设置sp、PC函数
+  - 使用汇编设置sp
+  - 使用函数指针指向PC第二个成员
+  - 外设和寄存器的reset
+    - 使用deinit表示复位
+- c语言调用汇编指令设置sp：MSR
+  - 第一个参数r0，第二个r1
+- 设置PC
+  - 需要知道RAM的大小，起始地址大小
+    - 一般RAM起始值（逻辑值）：0x20000000~0x20004FFF(20KB)
+- 创建A区工程（之前的串口工程）
+  - 修改target为0x08005000
+  - 修改向量表vect_tab_offset 0x5000
+  - 烧录A分区
+- 烧录B分区，其target设置为0x08000000
+
+**boot代码**
+
+```c
+#include "gd32f10x.h"
+#include "boot.h"
+#include "main.h"
+#include "usart.h"
+#include "delay.h"
+#include "fmc.h"
+#include "iic.h"
+#include "m24c02.h"
+
+load_a load_A;
+
+void BootLoader_Brance(void){
+	if(OTA_Info.OTA_flag == OTA_SET_FLAG){
+		u0_printf("OTA更新\r\n");
+	}else{
+		u0_printf("跳转A分区\r\n");
+		LOAD_A(GD32_A_SADDR);
+	}
+}
+
+// c语言使用汇编设置sp堆栈寄存器
+__asm void MSR_SP(uint32_t addr){
+	MSR MSP, r0
+	BX r14
+}
+
+// load_A表示函数指针，指向A区的地址，调用会修改PC值指向A区
+void LOAD_A(uint32_t addr){
+	if((*(uint32_t *)addr>=0x20000000)&&(*(uint32_t *)addr<=0x20004FFF)){
+		MSR_SP(*(uint32_t *)addr);
+		load_A = (load_a)*(uint32_t *)(addr+4);
+		BootLoader_Clear();
+		load_A();
+	}
+}
+
+void BootLoader_Clear(void){
+	usart_deinit(USART0);
+	gpio_deinit(GPIOA);
+	gpio_deinit(GPIOB);
+}
+
+
+
+// boot.h
+#ifndef BOOT_H
+#define BOOT_H
+
+#include "stdint.h"
+
+typedef void (*load_a)(void);
+
+void BootLoader_Brance(void);
+__asm void MSR_SP(uint32_t addr);
+void LOAD_A(uint32_t addr);
+void BootLoader_Clear(void);
+
+
+#endif
+```
+
+
+
+### 读写24c02结构体信息
+
+```
+1：谁将OTA_flag变成对勾？
+A区
+2：什么时候将OTA_flag变成对勾？
+A区下载完毕之后
+3：OTA时，最新版本的程序文件下载到哪？
+分片下载，[256],W25Q64中
+4：OTA时，最新版本的程序文件如何下载？下载多少？
+服务器下发告诉我们上传的新版本程序的大小，字节数
+4+：下载多少这个变量用不用保存？
+用，保存到24C02
+5：发生OTA事件时，B区如何更新A区？
+根据保存在24C02中的下载量，拿数据(每次1024个字节)，写到A区
+```
+
+
+
+**24c02保存的信息**
+
+- 在main.h结构体添加成员变量
+
+  - 该结构体保存到24c02中，确保是一页（16B）的整数倍
+  - Firelen[11]
+    - 0：OTA程序在w25q64中的大小
+    - 1-10：其他程序，比如uarst程序等在w25q64中的大小
+
+- 新加结构体
+
+  - 存放w25q64读取的数据buff，根据结构体中的数据写入到内部flash中
+
+  - UpDataA_B
+
+    - buff[1024]:内部flash中，一页1024字节
+    - blockNB：保存w25q64程序存放的块地址，0号块存放OTA程序
+
+  - ```
+    #ifndef MAIN_H
+    #define MAIN_H
+    
+    #include "stdint.h"
+    
+    #define  GD32_FLASH_SADDR   0x08000000                                             //FLASH起始地址
+    #define  GD32_PAGE_SIZE     1024                                                   //FLASH扇区大小
+    #define  GD32_PAGE_NUM      64                                                     //FLASH总扇区个数
+    #define  GD32_B_PAGE_NUM    20                                                     //B区扇区个数
+    #define  GD32_A_PAGE_NUM    GD32_PAGE_NUM - GD32_B_PAGE_NUM                        //A区扇区个数
+    #define  GD32_A_START_PAGE  GD32_B_PAGE_NUM                                        //A区起始扇区编号
+    #define  GD32_A_SADDR       GD32_FLASH_SADDR + GD32_A_START_PAGE * GD32_PAGE_SIZE  //FA区起始地址
+    
+    
+    #define OTA_SET_FLAG        0xAABB1122
+    
+    // 存放在24c02中，尽量保证一页的整数倍（16B）
+    typedef struct{
+    	uint32_t OTA_flag;
+    	uint32_t Firelen[11];   //0号成员固定对应OTA的大小，1-10标识其他程序的大小
+    }OTA_InfoCB;
+    #define OTA_INFOCB_SIZE sizeof(OTA_InfoCB)
+    	
+    typedef struct{
+    	uint8_t  Updatabuff[GD32_PAGE_SIZE];   // 每次向内部flash中写入一页
+    	uint32_t W25Q64_BlockNB;  // 不同块设备表示不同版本程序块，0表示OTA块，与Firelen一起用
+    }UpDataA_CB;
+    
+    
+    extern OTA_InfoCB OTA_Info;
+    extern UpDataA_CB UpDataA;
+    
+    #endif
+    ```
+
+    
+
+- 24c02写和读
+
+  - ```c
+    void M24C02_ReadOTAInfo(void){
+    	memset(&OTA_Info, 0, OTA_INFOCB_SIZE);
+    	M24C02_ReadData(0, (uint8_t *)&OTA_Info, OTA_INFOCB_SIZE);
+    }
+    
+    void M24C02_WriteOTAInfo(void){
+    	uint32_t cnt = OTA_INFOCB_SIZE / 16;
+    	for (int i = 0; i < cnt; ++i){
+    		M24C02_WritePage(i * 16, (uint8_t *)&OTA_Info + i * 16);
+    		Delay_Ms(5);
+    	}
+    }
+    
+    ```
+
+    
+
+### w25q64
+
+将w25q64新版本程序更新到内部flash中
+
+流程
+
+- 有OTA事件时，改变标志位
+  - update_A
+- 在main.c的循环中if功能进行OTA
+  - 判断长度是不是4B的整数倍（字的整数倍）
+  - 擦除flash
+  - 读取1024字节写入flash中
+  - 置位flag
+  - 调用nvic_systemReset函数
+
+```c
+#ifndef MAIN_H
+#define MAIN_H
+
+#include "stdint.h"
+
+#define  GD32_FLASH_SADDR   0x08000000                                             //FLASH起始地址
+#define  GD32_PAGE_SIZE     1024                                                   //FLASH扇区大小
+#define  GD32_PAGE_NUM      64                                                     //FLASH总扇区个数
+#define  GD32_B_PAGE_NUM    20                                                     //B区扇区个数
+#define  GD32_A_PAGE_NUM    GD32_PAGE_NUM - GD32_B_PAGE_NUM                        //A区扇区个数
+#define  GD32_A_START_PAGE  GD32_B_PAGE_NUM                                        //A区起始扇区编号
+#define  GD32_A_SADDR       GD32_FLASH_SADDR + GD32_A_START_PAGE * GD32_PAGE_SIZE  //FA区起始地址
+
+#define  UPDATA_A_FLAG      0x00000001  // 表示OTA事件
+
+
+#define OTA_SET_FLAG        0xAABB1122
+
+// 存放在24c02中，尽量保证一页的整数倍（16B）
+typedef struct{
+	uint32_t OTA_flag;
+	uint32_t Firelen[11];   //0号成员固定对应OTA的大小，1-10标识其他程序的大小
+}OTA_InfoCB;
+#define OTA_INFOCB_SIZE sizeof(OTA_InfoCB)
+	
+typedef struct{
+	uint8_t  Updatabuff[GD32_PAGE_SIZE];   // 每次向内部flash中写入一页
+	uint32_t W25Q64_BlockNB;  // 不同块设备表示不同版本程序块，0表示OTA块，与Firelen一起用
+}UpDataA_CB;
+
+
+extern OTA_InfoCB OTA_Info;
+extern UpDataA_CB UpDataA;
+
+#endif
+```
+
+```c
+#include "gd32f10x.h"
+#include "main.h"
+#include "usart.h"
+#include "delay.h"
+#include "fmc.h"
+#include "iic.h"
+#include "m24c02.h"
+#include "boot.h"
+#include "w25q64.h"
+
+OTA_InfoCB OTA_Info;
+UpDataA_CB UpDataA;
+uint32_t BootStaFlag;
+
+
+int main(void){
+	uint8_t i;
+	
+	Delay_Init();
+	Usart0_Init(921600);
+    IIC_Init();
+	M24C02_ReadOTAInfo();
+	BootLoader_Brance();
+	
+	while(1){
+		if(BootStaFlag&UPDATA_A_FLAG){
+			//更新A区
+			u0_printf("长度%d字节\r\n",OTA_Info.Firelen[UpDataA.W25Q64_BlockNB]);
+			if(OTA_Info.Firelen[UpDataA.W25Q64_BlockNB] % 4 == 0){
+				GD32_EraseFlash(GD32_A_START_PAGE,GD32_A_PAGE_NUM);
+				for(i=0;i<OTA_Info.Firelen[UpDataA.W25Q64_BlockNB]/GD32_PAGE_SIZE;i++){
+					W25Q64_Read(UpDataA.Updatabuff,i*1024 + UpDataA.W25Q64_BlockNB*64*1024 ,GD32_PAGE_SIZE);
+					GD32_WriteFlash(GD32_FLASH_SADDR + i*GD32_PAGE_SIZE,(uint32_t *)UpDataA.Updatabuff,GD32_PAGE_SIZE);
+				}
+				if(OTA_Info.Firelen[UpDataA.W25Q64_BlockNB] % 1024 != 0){
+					W25Q64_Read(UpDataA.Updatabuff,i*1024 + UpDataA.W25Q64_BlockNB*64*1024 ,OTA_Info.Firelen[UpDataA.W25Q64_BlockNB] % 1024);
+					GD32_WriteFlash(GD32_FLASH_SADDR + i*GD32_PAGE_SIZE,(uint32_t *)UpDataA.Updatabuff,OTA_Info.Firelen[UpDataA.W25Q64_BlockNB] % 1024);
+				}
+				if(UpDataA.W25Q64_BlockNB == 0){
+					OTA_Info.OTA_flag = 0;
+					M24C02_WriteOTAInfo();
+				}
+				NVIC_SystemReset();
+			}else{
+				u0_printf("长度错误\r\n");
+				BootStaFlag &=~ UPDATA_A_FLAG;
+			}
+		}
+	}
+}
+
+```
+
+
+
+### **bootloader收尾**
+
+
+
+**进入串口命令行**（38）
+
+- 串口的输入输出
+  - boot.c和boot.h的补充
+
+**擦除A 分区和重启实现**（39）
+
+**通过xmodem实现A区更新**
+
+- **xmoderm协议基础**（40）
+
+  - <img src="./../imgs/image-20250427174824394.png" alt="image-20250427174824394" style="zoom:50%;" />
+
+  - ```c
+    
+    1：先发C，500ms/1s
+    
+    2：SOH = 0x01
+    
+       ACK = 0x06
+    
+       NCK = 0x15
+    
+       EOT = 0x04
+    
+    3：有效数据 128 把它写入A区
+       
+       整包数据 128 + 5 = 133
+    
+    4：C8T6硬件CRC32位的，自己做一个CRC16校验
+    ```
+
+- **实现CRC16校验**（41）
+
+  - CRC32的代码
+
+    - ```c
+      // CRC32 查找表
+      static const uint32_t crc32_table[256] = {
+          0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
+          0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91,
+          // ...这里省略了部分表项，完整表可以通过生成函数得到
+      };
+      
+      // 生成 CRC32 查找表
+      void Generate_CRC32_Table(void) {
+          uint32_t polynomial = 0xEDB88320;
+          for (uint32_t i = 0; i < 256; i++) {
+              uint32_t c = i;
+              for (uint32_t j = 0; j < 8; j++) {
+                  if (c & 1) {
+                      c = polynomial ^ (c >> 1);
+                  } else {
+                      c = c >> 1;
+                  }
+              }
+              crc32_table[i] = c;
+          }
+      }
+      
+      // CRC32 计算函数
+      uint32_t Calculate_CRC32(uint8_t *data, uint32_t length) {
+          uint32_t crc = 0xFFFFFFFF;
+          
+          while (length--) {
+              crc = (crc >> 8) ^ crc32_table[(crc & 0xFF) ^ *data++];
+          }
+          
+          return crc ^ 0xFFFFFFFF;
+      }
+      ```
+
+  - CRC16代码
+
+    - ```c
+      uint16_t Xmodem_CRC16(uint8_t *data, uint16_t datalen){
+      	
+      	uint8_t i;
+      	uint16_t Crcinit = 0x0000;
+      	uint16_t Crcipoly = 0x1021;
+      	
+      	while(datalen--){
+      		Crcinit = (*data << 8) ^ Crcinit;
+      		for(i=0;i<8;i++){
+      			if(Crcinit&0x8000) 
+      				Crcinit = (Crcinit << 1) ^ Crcipoly;
+      			else 
+      				Crcinit = (Crcinit << 1);
+      		}
+      		data++;
+      	}
+      	return Crcinit;
+      }
+      ```
+
+- **实现发送C**（42）
+
+  - 定义标志位当要通过xmodem发送bin程序，则置位
+  - 根据标志位在主循环中定时发送C
+
+- **通过xmodem协议，将外部bin文件通过串口下载到内部flash中**
+
+  - boot.c文件，主要修改main.c/h和boot.c/h文件
+
+    - ```c
+      #include "gd32f10x.h"
+      #include "boot.h"
+      #include "main.h"
+      #include "usart.h"
+      #include "delay.h"
+      #include "fmc.h"
+      #include "iic.h"
+      #include "m24c02.h"
+      
+      load_a load_A;        //函数指针load_A
+      
+      /*-------------------------------------------------*/
+      /*函数名：BootLoader分支判断                       */
+      /*参  数：无                                       */
+      /*返回值：无                                       */
+      /*-------------------------------------------------*/
+      void BootLoader_Brance(void)
+      {
+      	if(BootLoader_Enter(20)==0){	
+      		if(OTA_Info.OTA_flag == OTA_SET_FLAG){       //判断OTA_flag是不是OTA_SET_FLAG定义的值，是的话进入if
+      			u0_printf("OTA更新\r\n");                //串口0输出信息
+      			BootStaFlag |= UPDATA_A_FLAG;            //置位标志位，表明需要更新A区
+      			UpDataA.W25Q64_BlockNB = 0;              //W25Q64_BlockNB等于0，表明是OTA要更新A区		
+      		}else{                                       //判断OTA_flag是不是OTA_SET_FLAG定义的值，不是的话进入else
+      			u0_printf("跳转A分区\r\n");              //串口0输出信息
+      			LOAD_A(GD32_A_SADDR);                    //跳转到A区
+      		}
+      	}
+      	u0_printf("进入BootLoader命令行\r\n");
+      	BootLoader_Info();
+      }
+      uint8_t BootLoader_Enter(uint8_t timeout){
+      	u0_printf("%dms内，输入小写字母 w ,进入BootLoader命令行\r\n",timeout*100);
+      	while(timeout--){
+      		Delay_Ms(100);
+      		if(U0_RxBuff[0] == 'w'){
+      			return 1;                            //进入命令行
+      		}
+      	}
+      	return 0;                                    //不进入命令行
+      }
+      void BootLoader_Info(void){
+      	u0_printf("\r\n");
+      	u0_printf("[1]擦除A区\r\n");
+      	u0_printf("[2]串口IAP下载A区程序\r\n");
+      	u0_printf("[3]设置OTA版本号\r\n");
+      	u0_printf("[4]查询OTA版本号\r\n");
+      	u0_printf("[5]向外部Flash下载程序\r\n");
+      	u0_printf("[6]使用外部Flash内程序\r\n");
+      	u0_printf("[7]重启\r\n");
+      }
+      void BootLoader_Event(uint8_t *data, uint16_t datalen){
+      	if(BootStaFlag == 0){
+      		if((datalen==1)&&(data[0]=='1')){
+      			u0_printf("擦除A区\r\n");
+      			GD32_EraseFlash(GD32_A_START_PAGE,GD32_A_PAGE_NUM);
+      		}
+      		else if((datalen==1)&&(data[0]=='2')){
+      			u0_printf("通过Xmodem协议，串口IAP下载A区程序，请使用bin格式文件\r\n");
+      			GD32_EraseFlash(GD32_A_START_PAGE,GD32_A_PAGE_NUM);	
+      			BootStaFlag |= (IAP_XMODEMC_FLAG|IAP_XMODEMD_FLAG);
+      			UpDataA.XmodemTimer = 0;
+      			UpDataA.XmodemNB= 0;
+      		}
+      		else if((datalen==1)&&(data[0]=='7')){
+      			u0_printf("重启\r\n");
+      			Delay_Ms(100);
+      			NVIC_SystemReset(); 			
+      		}
+      	}
+      	if(BootStaFlag&IAP_XMODEMD_FLAG){
+      		if((datalen==133)&&(data[0]==0x01)){
+      			BootStaFlag &=~ IAP_XMODEMC_FLAG;
+      			UpDataA.XmodemCRC = Xmodem_CRC16(&data[3],128);
+      			if(UpDataA.XmodemCRC == data[131]*256 + data[132]){
+      				UpDataA.XmodemNB++;
+      				memcpy(&UpDataA.Updatabuff[((UpDataA.XmodemNB-1)%(GD32_PAGE_SIZE/128))*128],&data[3],128);
+      				if((UpDataA.XmodemNB%(GD32_PAGE_SIZE/128))==0){
+      					GD32_WriteFlash(GD32_A_SADDR + ((UpDataA.XmodemNB/(GD32_PAGE_SIZE/128))-1)*GD32_PAGE_SIZE,(uint32_t *)UpDataA.Updatabuff,GD32_PAGE_SIZE);    //写入到单片机A区相应的扇区
+      				}
+      				u0_printf("\x06");
+      			}else{
+      				u0_printf("\x15");
+      			}
+      		}
+      		if((datalen==1)&&(data[0]==0x04)){
+      			u0_printf("\x06");
+      			if((UpDataA.XmodemNB%(GD32_PAGE_SIZE/128))!=0){
+      				GD32_WriteFlash(GD32_A_SADDR + ((UpDataA.XmodemNB/(GD32_PAGE_SIZE/128)))*GD32_PAGE_SIZE,(uint32_t *)UpDataA.Updatabuff,(UpDataA.XmodemNB%(GD32_PAGE_SIZE/128))*128);    //写入到单片机A区相应的扇区
+      			}
+      			BootStaFlag &=~ IAP_XMODEMD_FLAG;
+      			Delay_Ms(100);
+      			NVIC_SystemReset(); 
+      		}
+      	}
+      }
+      /*-------------------------------------------------*/
+      /*函数名：设置SP                                   */
+      /*参  数：addr：栈顶指针初始值                     */
+      /*返回值：无                                       */
+      /*-------------------------------------------------*/
+      __asm void MSR_SP(uint32_t addr)
+      {
+      	MSR MSP, r0        //addr的值加载到了r0通用寄存器，然后通过MSR指令，将通用寄存器r0的值写入到MSP主堆栈指针
+      	BX r14             //返回调用MSR_SP函数的主函数
+      }
+      /*-------------------------------------------------*/
+      /*函数名：跳转到A区                                */
+      /*参  数：addr：A区的起始地址                      */
+      /*返回值：无                                       */
+      /*-------------------------------------------------*/
+      void LOAD_A(uint32_t addr)
+      {
+      	if((*(uint32_t *)addr>=0x20000000)&&(*(uint32_t *)addr<=0x20004FFF)){     //判断sp栈顶指针的范围是否合法，在对应型号的RAM控件范围内
+      		MSR_SP(*(uint32_t *)addr);                                            //设置SP
+      		load_A = (load_a)*(uint32_t *)(addr+4);                               //将函数指针load_A指向A区的复位向量
+      		BootLoader_Clear();                                                   //清除B区使用的外设
+      		load_A();                                                             //调用函数指针load_A，改变PC指针，从而转向A区的复位向量位置，完成跳转
+      	}else u0_printf("跳转A分区失败\r\n"); 
+      }
+      /*-------------------------------------------------*/
+      /*函数名：清除B区使用的外设                        */
+      /*参  数：无                                       */
+      /*返回值：无                                       */
+      /*-------------------------------------------------*/
+      void BootLoader_Clear(void)
+      {
+      	usart_deinit(USART0);   //复位串口0
+      	gpio_deinit(GPIOA);     //复位GPIOA
+      	gpio_deinit(GPIOB);     //复位GPIOB
+      }
+      
+      uint16_t Xmodem_CRC16(uint8_t *data, uint16_t datalen){
+      	
+      	uint8_t i;
+      	uint16_t Crcinit = 0x0000;
+      	uint16_t Crcipoly = 0x1021;
+      	
+      	while(datalen--){
+      		Crcinit = (*data << 8) ^ Crcinit;
+      		for(i=0;i<8;i++){
+      			if(Crcinit&0x8000) 
+      				Crcinit = (Crcinit << 1) ^ Crcipoly;
+      			else 
+      				Crcinit = (Crcinit << 1);
+      		}
+      		data++;
+      	}
+      	return Crcinit;
+      }
+      ```
+
+- **更新外部flash文件到外部flash**
+
+- **更新外部flash到A区**
+
+
+
+
+
+
+
+## 总结
+
+已完成一下功能：
+
+- 没有OTA事件时，正常跳转到A区
+- 有OTA事件时，更新w25q64中的程序到A区中
+- 通过串口传输文件
+
+
+
+接受缓冲区：有rxbuff，有指针start、end，针对start和end数组有in和out
+
+外部flash：
+
+- 存ota_flag、sft_len[]、ota_ver
+
+- 存放外部flash到内部flash结构体/或者外部网络传输的bin文件：
+
+  - buff，定义内部flash一页
+
+  - 外部flash开始地址，记录sft_len下的索引
+  - 记录收到的数据包数量
+  - CRC值
+
+
+
+接受数据、存放到外部flash中，从外部flash加载到内部flash中
+
+
+
+
+
+**网线传输数据：**
+
+<img src="./../imgs/image-20250427174824394.png" alt="image-20250427174824394" style="zoom: 80%;" />
+
+根据xmodem协议传输数据
+
+
+
+```c
+
+1：先发C，500ms/1s
+
+2：SOH = 0x01
+
+   ACK = 0x06
+
+   NCK = 0x15
+
+   EOT = 0x04
+
+3：有效数据 128 把它写入A区
+   
+   整包数据 128 + 5 = 133
+
+4：C8T6硬件CRC32位的，自己做一个CRC16校验
+
+
+将文件分成多个数据包
+接收端每收到一个数据包就把序号存到文件中，发送指定数据包序号+1即可断点续传
+接收端收到后从指定分片，指定字节处开始下载
+SOH(开始位)0x01(数据包序号)0xfe(序号位反码)数据位CRC32(CRC冗余检错)
+SOH(开始位)0x02(数据包序号)0xfd(序号位反码)数据位补0CRC32(CRC冗余检错)
+
+发送的数据位可以包含：
+	 bin文件总大小，文件名、文件位置、检验位
+	下位机的内部flash开始地址、数据位
+    
+服务器发送OTA更新消息
+spaceOS收到后发送
+```
+
+
+
+
+
+
+
+
+
+
+
+TODO：
+
+- OTA升级网络协议（看github）
+- spaceOS系统流程 （讨论）
+- flash操作流程（手册）
+
+
+
+
+
+
+
+# spaceOS
+
+```
+RAM：256KB
+
+SDK\system_platform\FSBL\A7_NOR_XIP.icf
+    nor flash：
+    1. 基地址: 0xE2000000
+       - SMC控制器映射的NOR Flash起始地址
+    2. FSBL区域
+       - 起始地址: 0xE2002800
+       - 布局:
+```
+         向量表:   0xE2002800 - 0xE2002900 (256字节)
+         代码区域: 0xE2002900 - 0xE2FFFFFF
+         ```
+    
+    3. 存储空间大小
+       - ROM区域: 0xE2002800 - 0xE2FFFFFF
+       - 实际大小: 约14MB
+
+   
+
+
+    1. QSPI Flash
+       - 容量：16MB
+       - 地址范围：0xE8000000 - 0xE8FFFFFF
+       - 特点：串行接口，支持XIP
+    
+    2. NOR Flash (通过SMC)
+       - 容量：16MB
+       - 地址范围：0xE2000000 - 0xE2FFFFFF
+       - 特点：并行接口，支持XIP
+
+```
+
+
+
+
+
+## 文件介绍
+
+主要关注SDK文件夹下内容
+
+让我详细解释这个系统平台目录结构：
+
+**1. `FM_QL_bsp/` - 板级支持包目录**
+
+```markdown
+- bootloader/      # 启动引导程序
+- include/         # 通用头文件目录
+- libsrc/          # 驱动库源代码
+  - qspips_v1_0/   # QSPI Flash控制器驱动
+  - smcps_v1_0/    # 静态存储控制器驱动
+  - nfcps_v1_0/    # NAND Flash控制器驱动
+  - i2cps_v1_0/    # I2C控制器驱动
+  - fatfs_v1_0/    # 文件系统驱动
+- pl/              # 可编程逻辑相关代码
+- plsrc/           # 可编程逻辑源代码
+```
+
+**2. `FM_QL_doc/` - 文档目录**
+
+```markdown
+包含各种外设接口的说明文档：
+- QSPI控制器接口说明文档.pdf
+- SDMMC接口说明文档.pdf
+- SMC接口说明文档.pdf 
+- 其他外设接口文档...
+```
+
+**3. `fs/` - 文件系统目录**
+
+```markdown
+- h/               # 文件系统头文件
+包含文件系统相关实现代码
+```
+
+**4. `FSBL/` - 第一阶段启动加载程序**
+
+```markdown
+- A7_NOR_XIP.icf   # NOR Flash XIP模式配置
+- A7_QSPI_XIP.icf  # QSPI Flash XIP模式配置
+- a7_sram.icf      # SRAM配置
+```
+
+**5. `PTP/` - 精确时间协议**
+
+```markdown
+实现IEEE 1588精确时间协议相关功能
+```
+
+**6. `SpaceOS/` - 操作系统核心**
+
+```markdown
+操作系统的核心实现代码
+```
+
+**7. `tsn/` - 时间敏感网络**
+
+```markdown
+实现TSN(Time Sensitive Networking)相关功能
+```
+
+**8. `settings/` - 配置文件目录**
+
+```markdown
+包含各种系统配置文件
+```
+
+
+
+## libsrc介绍
+
+让我详细解释 SDK/system_platform/FM_QL_bsp/libsrc/ 目录下每个文件夹的功能：
+
+### 通信相关驱动
+```markdown
+1. canps_v1_0/      # CAN总线控制器驱动
+2. i2cps_v1_0/      # I2C控制器驱动
+3. uartps_v1_0/     # 串口控制器驱动
+4. gmacps_v1_0/     # 以太网MAC控制器驱动
+```
+
+### 存储相关驱动
+```markdown
+1. nfcps_v1_0/      # NAND Flash控制器驱动
+2. qspips_v1_0/     # QSPI Flash控制器驱动(v1.0)
+3. qspips_v1_1/     # QSPI Flash控制器驱动(v1.1)
+4. smcps_v1_0/      # 静态存储控制器驱动(NOR Flash)
+5. sdmmcps_v1_0/    # SD/MMC卡控制器驱动
+6. fatfs_v1_0/      # FAT文件系统驱动
+```
+
+### 系统控制相关
+```markdown
+1. gicps_v1_0/      # 全局中断控制器
+2. dmaps_v1_0/      # DMA控制器驱动
+3. devcps_v1_0/     # 设备控制驱动
+4. ddr3ps_v1_0/     # DDR3内存控制器驱动
+```
+
+### 定时器/看门狗
+```markdown
+1. ttcps_v1_0/      # 三重定时器计数器驱动
+2. wdtps_v1_0/      # 看门狗定时器驱动
+3. gtcps_v1_0/      # 全局定时器计数器驱动
+```
+
+### IO控制相关
+```markdown
+1. gpiops_v1_0/     # GPIO控制器驱动
+2. slcrps_v1_0/     # 系统级控制寄存器驱动
+```
+
+### 通用功能支持
+```markdown
+1. common_v1_0/     # 通用函数和定义
+   - 包含基础数据结构
+   - 通用宏定义
+   - 基础功能函数
+```
+
+### 特殊功能接口
+```markdown
+1. spips_v1_0/      # SPI控制器驱动(v1.0)
+2. spips_v1_1/      # SPI控制器驱动(v1.1)
+3. usbps_v1_0/      # USB控制器驱动
+```
+
+这些驱动文件共同构成了一个完整的BSP(板级支持包)，为上层应用提供硬件抽象层接口。每个驱动都遵循相似的结构：
+1. 控制器寄存器定义
+2. 数据结构定义
+3. 驱动初始化函数
+4. 操作接口函数
+5. 中断处理函数
+
+## 关于flash部分内容
+
+```
+1、SDK\system_platform\FM_QL_bsp\include\fmsh_ps_parameters.h
+	存放flash外设对应内存的基地址（虚拟地址）
+	以qspi举例说明：（nor同理，nand没有数据映射）
+	1. 当CPU访问0xE8000000这个地址时：
+       - 不是访问实际的内存
+       - 而是通过QSPI控制器读取Flash内容
+       - 控制器将Flash数据返回给CPU
+    2. 这种映射机制的优点：
+       - 可以像访问内存一样读取Flash
+       - 支持代码直接从Flash执行(XIP)
+       - 无需专门的读取命令
+2、NOR Flash
+	QSPI (Quad SPI)总线的形式（用于串行nor flash）：
+		bootloader加载到这
+        SDK\system_platform\FM_QL_bsp\libsrc\qspips_v1_0
+        	SDK\system_platform\FM_QL_bsp\libsrc\qspips_v1_0\fmsh_qspips.h
+        		FQspiPs_T：存放操作nor flash的信息
+        有API可以运行相关的API接口确定qspi的Flash的大小、页/块大小、读写API接口
+        手册qspi对应的是1.0版本
+    smc (Static Memory Controller)的形式（用于并行nor flash）：
+    	SDK/system_platform/FM_QL_bsp/libsrc/smcps_v1_0/
+    		SDK\system_platform\FM_QL_bsp\libsrc\smcps_v1_0\fmsh_smc.h
+    			FSmcPs_T：存放操作nor flash的信息
+   
+2、NAND Flash
+	NFCPS(NAND Flash Controller Peripheral Space)
+		存放OTA下载区
+        SDK/system_platform/FM_QL_bsp/libsrc/nfcps_v1_0/
+            SDK\system_platform\FM_QL_bsp\libsrc\qspips_v1_0\fmsh_qspips.h
+                FQspiPs_T：存放操作nand flash的信息
+3、SD/MMC/eMMC
+	驱动代码层
+		SDK\system_platform\FM_QL_bsp\libsrc\sdmmcps_v1_0
+	在SD卡上套fatFs文件系统
+		SDK\system_platform\FM_QL_bsp\libsrc\fatfs_v1_0
+	
+4、QSPI和smc的区别
+	SMC：
+        1. 并行数据总线(8/16位)
+        2. 地址线和数据线分开
+        3. 典型厂商：AMD/Spansion、Intel等
+        4. 支持的命令集：
+           - AMD命令集
+           - Intel命令集
+           - CFI(Common Flash Interface)标准
+    QSPI：
+    	1. 串行接口，使用更少的引脚
+        2. 支持多种传输模式:
+           - 标准SPI (1线传输)
+           - 双线传输 (DUAL SPI)
+           - 四线传输 (QUAD SPI)
+        3. 典型厂商：
+           - Winbond
+           - Micron
+           - ISSI
+           - Macronix
+           - 复旦微
+        4. 支持XIP(Execute In Place)
+```
+
+
+
+
+
+TODO：
+
+​	了解spaceOS启动流程
+
+​	怎么烧录的spaceOS
+
+​	一些硬件：
+
+​		QSPI还是smc
+
+​		nand还是sd/emmc/mmc
+
+
+
+
+
+**准备一些问题**
+
+**做一个PPT、word文档方案**
+
+**需求**
+
+
+
+**固件、软件（SD）**
+
+
+
+
+
+网络协议、能不能不重启
+
+
+
+
+
+
 
 ## 网络OTA
 
@@ -1672,9 +2776,208 @@ int main(void){
 
 
 
+http_ota
+
+**rt_ota:**
+
+参考**UM1004-RT-Thread-OTA 用户手册.pdf**
+
+- fal软件包用来对flash进行操作
+
+  - FAL 软件包下载：
+
+    - git clone https://github.com/RT-Thread-packages/fal.git
+    - FAL 软件包移植参考 FAL README
+
+  - Quicklz 或者 Fastlz（可选）
+
+    - 压缩固件
+
+    - ```
+      Quicklz 和 Fastlz 是 rt_ota 支持的解压缩软件包，用户可以选择使用其中的一个。
+      Quicklz 软件包下载：
+      git clone https://github.com/RT-Thread-packages/quicklz.git
+      在 OTA 中启用压缩并且使用 Quicklz 需要在 rtconfig.h 文件中定义以下宏定义：
+      #define RT_OTA_USING_CMPRS // 启用解压缩功能
+      #define RT_OTA_CMPRS_ALGO_USING_QUICKLZ // 使用 Quicklz
+      #define QLZ_COMPRESSION_LEVEL 3 // 定义使用 Quicklz 3级压缩
+      
+      Fastlz 软件包下载：
+      git clone https://github.com/RT-Thread-packages/fastlz.git
+      在 OTA 中启用压缩并且使用 Quicklz 需要在 rtconfig.h 文件中定义以下宏定义：
+      #define RT_OTA_USING_CMPRS // 启用解压缩功能
+      #define RT_OTA_CMPRS_ALGO_USING_FASTLZ // 使用 Fastlz
+      ```
+
+  - TinyCrypt（可选）
+
+    - 固件加密解密
+
+    - ```
+      inyCrypt 是 rt_ota 中使用的用于固件加密的软件包，支持 AES256 加解密。
+      TinyCrypt 软件包下载：
+      git clone https://github.com/RT-Thread-packages/tinycrypt.git
+      在 OTA 中启用压缩并且使用 TinyCrypt 需要在 rtconfig.h 文件中定义以下宏定义：
+      #define RT_OTA_USING_CRYPT // 启用 Tinycrypt 组件包
+      #define TINY_CRYPT_AES // 启用 AES 功能
+      #define RT_OTA_CRYPT_ALGO_USING_AES256 // 启用 AES256 加密功能
+      ```
+
+      
+
+- webclient用来下载文件（需要知道流程）
+
+  - TCP连接，端口号80
+
+  - ```
+    1.客户端连接到服务器
+    WebClient 用户手册
+    通常是通过 TCP 三次握手建立 TCP 连接，默认 HTTP 端口号为 80。
+    2. 客户端发送 HTTP 请求（GET/POST）
+    通过 TCP 套接字，客户端向 Web 服务器发送一个文本的请求报文，一个请求报文由
+    请求行、请求头部、空行和请求数据四部分组成
+    3. 服务器接受请求并返回 HTTP 响应
+    服务器解析请求，定位请求资源。服务器将需要发送的资源写到 TCP 套接字，由客户
+    端读取。一个响应由状态行、响应头部、空行和响应数据四部分组成。
+    4. 客户端和服务器断开连接
+    若客户端和服务器之间连接模式为普通模式，则服务器主动关闭 TCP 连接，客户端被
+    动关闭连接，释放 TCP 连接。若连接模式为 keepalive 模式，则该连接保持一段时间，
+    在该时间内可以继续接收数据。
+    5. 客户端解析响应的数据内容
+    客户端获取数据后应该先解析响应状态码，判断请求是否成功，然后逐行解析响应报
+    头，获取响应数据信息，最后读取响应数据，完成整个 HTTP 数据收发流程。
+    ```
+
+    
+
+
+
+**我需要补充的：**
+
+- 断点续传（从服务器分片下载数据）
+  - 视频
+    - [【手把手教程 4G通信物联网 OTA远程升级 BootLoader程序设计】GD32F103C8T6单片机【上篇章】_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1SatHeBEVG/?spm_id_from=333.1387.favlist.content.click&vd_source=3b2bba9cd9eee7c88a08ea7d3ea6261a)
+  - webclient分片下载样例
+    - [webclient/docs/samples.md at master · RT-Thread-packages/webclient (github.com)](https://github.com/RT-Thread-packages/webclient/blob/master/docs/samples.md)
+- 版本回滚（服务器端存放多个版本）
+
+
+
+**TODO：**
+
+- webclient
+  - [RT-Thread-packages/webclient: http client library by RT-Thread (github.com)](https://github.com/RT-Thread-packages/webclient)
+  - 完整的API
+    - [webclient/docs/api.md at master · RT-Thread-packages/webclient (github.com)](https://github.com/RT-Thread-packages/webclient/blob/master/docs/api.md)
+- fal
+
+
+
+**先通过分片实现断点续传功能**
+
+- 看rtthread怎么实现
+- 视频怎么实现的
+- 博客
+
+
+
+
+
+
+
+- spaceOS通过命令下载指定固件
+- 服务器向spaceOS下发固件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 **新在哪里**
 
+- 操作系统：
+  - spaceOS实时操作系统
+- 有线网络
+  - TSN实时确定性网络
+  - 有线网络下OTA，迪杰斯特拉找没有ota的开发板
+  - 快速OTA，用空间换时间（记录网络拓扑）
+  - 专门使用一个CPU核心用于ota，确保第一时间下载更新程序
+- 不同网络域
+  - CAN-TSN转换
+
+
+
+
+
+
+
+SDK\system_platform\FM_QL_bsp\pl\libsrc\qspips_v3_6\src\xqspips.h
+
+SDK\system_platform\FM_QL_bsp\libsrc\qspips_v1_0\fmsh_qspips_flash.c
+
+
+
+好像有QSPI Flash外部flash，内部flash操作接口没有看到
+
+有内部flash：**NOR Flash**
+
+**spaceOS部分**
+
+- 需要知道板子内部flash大小
+  - 找到空闲flash
+  - 划分空间
+  - 如何读写flash操作，看lib库
+- 守护进程的实现（书籍）
+
+如果你需要操作 Flash，应该查看以下几个目录的驱动文件：
+
+不知道bootloader烧录到哪
+
+1. **QSPI Flash 驱动（有手册）**:
+
+   **外部flash**
+```
+SDK/system_platform/FM_QL_bsp/libsrc/qspips_v1_0/
+```
+
+2. **NOR Flash 驱动(有手册)**:
+
+​	**内部flash**
+
+```
+SDK/system_platform/FM_QL_bsp/libsrc/smcps_v1_0/
+```
+
+3. **NAND Flash 驱动（有手册）**:
+
+​	**磁盘**
+
+```
+SDK/system_platform/FM_QL_bsp/libsrc/nfcps_v1_0/
+```
+
+建议根据你的硬件平台使用的 Flash 类型选择对应的驱动模块。比如对于 QSPI Flash，你可以查看：
+- `fmsh_qspips.h`
+- `fmsh_qspips.c` 
+
+**对以上三种flash的理解：**
+
+这些文件中包含了具体的 Flash 读写操作接口。
+
+- **QSPI Flash**：通常是外部 Flash。它通过 SPI 接口与主控芯片连接，具有高速数据传输、节省引脚资源等特点，常被用于外部扩展存储，可存储代码、数据等，一些对启动速度要求高的系统会用它来存储 Bootloader 和部分关键代码，也可用于存储一些需要快速读取的配置信息或小型数据库等。
+- **NOR Flash**：既可以是内部 Flash，也可以是外部 Flash。在很多嵌入式系统中，由于其随机访问速度快、支持 XIP 等特性，常被用于存储 Bootloader、操作系统内核以及关键的应用程序代码等。但说它只能存这些是不准确的，它也可以存储一些重要的配置数据、参数等，只是从成本和存储特性角度考虑，一般不会用它来存大量的非关键数据。
+- **NAND Flash**：常被用于实现类似文件系统的功能来存放大容量的数据，如在嵌入式设备中用于存储用户的文件、日志、多媒体数据等。不过，它也可以用于存储系统的一些数据，比如在一些手机中，除了用户数据外，系统的部分配置信息、缓存数据等也可能存储在 NAND Flash 中。而且，在一些特定的嵌入式系统中，经过特殊的设计和管理，NAND Flash 也可以用来存储部分代码，但一般需要配合复杂的管理机制来保证代码执行的可靠性和效率。
 
 
 
@@ -1707,48 +3010,6 @@ int main(void){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-**lwip 进行网络操作：**
-
-- **RAW API：**内核回调型API，在没有操作系统支持的中，只能使用RAW API进行开发
-- **Netconn API：**基于操作系统的IPC机制（即信号量和邮箱机制）实现的，将LWIP内核代码和网络应用程序分离成了独立的线程，因此LWIP内核线程就只负责数据包的TCP/IP封装和拆封，而不用进行数据的应用层处理，大大提高了系统对网络数据包的处理效率
-- **Socket API：**即套接字，它对网络连接进行了高级的抽象，使得用户可以像操作文件一样操作网络连接
-
-
-
-
-
-![image-20250423214400531](./../imgs/image-20250423214400531.png)
-
-安装一些软件包
-
-​	wireshark
-
-​	procise
-
-​	iar
-
-板子跑起来：（和主机通信）
-
-- LwipTask
-  - network_thread_pl
-    - sys_thread_new
-      - socket_udp_test_pl
-
-再收发文件
 
 
 

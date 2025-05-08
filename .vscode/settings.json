@@ -15,6 +15,7 @@
         "stdio.h": "c",
         "stdlib.h": "c",
         "winsock2.h": "c",
-        "if.h": "c"
+        "if.h": "c",
+        "time.h": "c"
     }
 }

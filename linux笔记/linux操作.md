@@ -207,19 +207,11 @@ ps只是查看进程,而top还可以监视系统性能,如平均负载,cpu和内
 
 1. **`-e`** 或 **`-A`**：显示所有进程。
 
-   bash
-
-   复制
-
    ```
    ps -e
    ```
 
 2. **`-f`**：以完整格式显示进程信息。
-
-   bash
-
-   复制
 
    ```
    ps -ef
@@ -227,19 +219,11 @@ ps只是查看进程,而top还可以监视系统性能,如平均负载,cpu和内
 
 3. **`-u`**：显示特定用户的进程。
 
-   bash
-
-   复制
-
    ```
    ps -u username
    ```
 
 4. **`-aux`**：显示所有用户的进程，常用于查看进程的详细信息。
-
-   bash
-
-   复制
 
    ```
    ps aux
@@ -247,23 +231,24 @@ ps只是查看进程,而top还可以监视系统性能,如平均负载,cpu和内
 
 5. **`--sort`**：根据指定字段排序。例如，按内存使用量排序：
 
-   bash
-
-   复制
-
    ```
    ps aux --sort=-%mem
    ```
 
 6. **`-o`**：自定义输出格式。例如，只显示 PID 和命令名称：
 
-   bash
-
-   复制
-
    ```
    ps -eo pid,comm
    ```
+
+| 参数          | 说明                                                         | 示例与输出说明                                               |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `-A` / `-e`   | 显示**所有进程**（包括守护进程）                             | `ps -e`：输出所有进程的基础信息（PID、TTY、TIME、CMD）。     |
+| `-a`          | 显示**当前终端的所有进程**（含其他用户），但排除会话领导者进程 | `ps -a`：显示当前终端下所有用户的进程，如： `PID TTY TIME CMD` `1234 pts/0 00:00:00 bash` |
+| `-d`          | 显示所有进程，但排除会话领导者进程                           | 与`-a`类似，但更严格，常用于过滤系统级进程。                 |
+| `-x`          | 显示**无控制终端的进程**（如守护进程）                       | `ps -x`：可配合`-a`使用（`ps -ax`），显示所有终端和无终端的进程。 |
+| `-t TTY`      | 显示指定终端的进程（如`pts/0`）                              | `ps -t pts/0`：仅显示在`pts/0`终端运行的进程。               |
+| `-u username` | 显示指定用户的进程（支持`UID`或用户名）                      | `ps -u root`：显示 root 用户的所有进程，包括系统服务。       |
 
 ## ls命令
 
@@ -1413,13 +1398,62 @@ int main(void)
 
 ## 获得当前时间
 
+- 方式一
+
+  - ```c
+    char time_str[64];  // 存储目前时间
+    char *getTime() {
+        time_t now = time(NULL);
+        struct tm *local_time = localtime(&now);
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
+        return time_str;
+    }
+    ```
+
+- 方式二
+
+  - ```c
+    struct timeval* getTime(){
+    	struct timeval *tv = (struct timeval *)malloc(sizeof(struct timeval));
+    	struct timezone tz;
+    	gettimeofday(&tv,&tz);
+    	return tv
+    }
+    ```
+
+    
+
+## 自定义printf
+
 ```c
-char time_str[64];  // 存储目前时间
-char *getTime() {
-    time_t now = time(NULL);
-    struct tm *local_time = localtime(&now);
-    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
-    return time_str;
+#include <stdio.h>
+#include <stdarg.h>
+
+// 自定义的printf函数
+int custom_printf(const char *format, ...) {
+    va_list args;
+    int result;
+
+    // 初始化可变参数列表
+    va_start(args, format);
+
+    // 调用vprintf函数进行格式化输出
+    result = vprintf(format, args);
+
+    // 结束可变参数列表
+    va_end(args);
+
+    return result;
 }
+
+int main() {
+    int num = 42;
+    char str[] = "Hello, World!";
+
+    // 使用自定义的printf函数
+    custom_printf("Number: %d, String: %s\n", num, str);
+
+    return 0;
+}    
 ```
 
