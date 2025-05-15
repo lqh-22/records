@@ -2488,6 +2488,90 @@ TODO：
 
 # spaceOS
 
+**操作系统入口函数：**SDK\system_platform\SpaceOS\Demo\main.c
+
+​	调用SDK\system_platform\SpaceOS\Demo\SYSMain.c函数创建任务
+
+​		调用SYS_SoftInit()函数完成软件初始化
+
+​			调用SYS_Task_Create()创建任务
+
+​				调用OSTaskSpawn()函数创建ptp4l任务
+
+**bootloader入口函数：**SDK\system_platform\FSBL\FM_QL_fsbl\main.c
+
+**lwip:**SDK\system_platform\SpaceOS\FM_QL_lwip\LWIP213
+
+**需要了解app.c文件：**SDK\system_platform\SpaceOS\Demo\app.c
+
+​	一个应用程序测试代码，之后的代码可以以OSTaskSpawn的形式运行，放在SYSMain函数中
+
+**了解OSTask.h文件：**SDK\system_platform\SpaceOS\Source\os\h\OSTask.h
+
+​	OSTaskSpawn等函数的声明头文件
+
+**查看分区信息：**
+
+- 在bootloader入口函数处BOOT_STAGE2阶段打印分区信息
+
+- ```c
+  case BOOT_STAGE2:
+  {
+      // ...existing code...
+      BootStatus = FmshFsbl_BootDeviceInitAndValidate(&BootInstance);
+      
+      if (FMSH_SUCCESS == BootStatus) 
+      {
+          // 打印分区表信息
+          LOG_OUT(DEBUG_INFO, "\r\n============ Partition Table Info ============\r\n");
+          LOG_OUT(DEBUG_INFO, "Total Partitions: %d\r\n", 
+                  BootInstance.ImageHeader.ImageHeaderTable.NoOfPartitions);
+          
+          // 遍历所有分区
+          for(u32 i = 0; i < BootInstance.ImageHeader.ImageHeaderTable.NoOfPartitions; i++) 
+          {
+              Ps_PartitionHeader *Part = &(BootInstance.ImageHeader.PartitionHeader[i]);
+              LOG_OUT(DEBUG_INFO, "\r\nPartition %d:\r\n", i);
+              LOG_OUT(DEBUG_INFO, "- Size: 0x%08x\r\n", Part->PartitionSize);
+              LOG_OUT(DEBUG_INFO, "- Load Address: 0x%08x\r\n", Part->LoadAddress);
+              LOG_OUT(DEBUG_INFO, "- Exec Address: 0x%08x\r\n", Part->ExecAddress);
+              LOG_OUT(DEBUG_INFO, "- Type: %d\r\n", Part->PartitionType);
+              
+              // 打印分区类型说明
+              switch(Part->PartitionType) {
+                  case 0:
+                      LOG_OUT(DEBUG_INFO, "  (FSBL)\r\n");
+                      break;
+                  case 1:
+                      LOG_OUT(DEBUG_INFO, "  (FPGA Bitstream)\r\n");
+                      break;
+                  case 2:
+                      LOG_OUT(DEBUG_INFO, "  (Application)\r\n");
+                      break;
+                  default:
+                      LOG_OUT(DEBUG_INFO, "  (Data)\r\n");
+                      break;
+              }
+          }
+          LOG_OUT(DEBUG_INFO, "==========================================\r\n\n");
+      }
+      
+      // ...existing code...
+  }
+  ```
+
+  
+
+
+
+
+
+
+
+
+
+
+
 ```
 RAM：256KB
 
@@ -2508,6 +2592,9 @@ SDK\system_platform\FSBL\A7_NOR_XIP.icf
        - 实际大小: 约14MB
 
    
+
+
+
 
 
     1. QSPI Flash
@@ -3005,6 +3092,347 @@ SDK/system_platform/FM_QL_bsp/libsrc/nfcps_v1_0/
 
 
 
+## OSTaskSpawn
+
+`OSTaskSpawn()` 是实时操作系统（RTOS）中用于创建任务（线程）的核心函数，不同 RTOS（如 VxWorks、uC/OS）的参数设计大同小异。以下以**VxWorks 系统**的标准实现为例，详细解析各参数的含义和用途：
+
+### 一、**函数原型（VxWorks）**
+
+```c
+STATUS OSTaskSpawn(
+    int taskId,           // 任务ID（唯一标识）
+    int priority,         // 任务优先级
+    UINT32 options,       // 任务选项（位掩码）
+    int stackSize,        // 栈空间大小（字节）
+    FUNCPTR entryPt,      // 任务入口函数指针
+    int arg1, int arg2,   // 参数1~5（传递给任务）
+    int arg3, int arg4, 
+    int arg5
+);
+```
+
+### 二、**参数详解**
+
+#### 1. **`taskId`：任务标识符**
+
+- **作用**：为新任务分配的唯一整数 ID，用于后续操作（如挂起、删除、查询状态）。
+
+- 取值规则：
+
+  - 正整数：用户自定义 ID（需确保唯一性）。
+  - `0`：系统自动分配唯一 ID（推荐做法，避免冲突）。
+
+- 示例：
+
+  ```c
+  // 自动分配ID
+  taskId = OSTaskSpawn(0, 100, 0, 4096, myTask, 0, 0, 0, 0, 0);
+  ```
+
+#### 2. **`priority`：任务优先级**
+
+- **作用**：决定任务在调度队列中的执行顺序，数值越小优先级越高（部分 RTOS 反之）。
+- 典型范围：
+  - VxWorks：0（最高）~ 255（最低）。
+  - uC/OS-III：0（最高）~ 255（最低）。
+- 注意事项：
+  - **临界区保护**：高优先级任务可能抢占持有共享资源的低优先级任务，导致**优先级反转**。
+  - **实时性需求**：关键任务（如传感器数据采集）需设为较高优先级。
+
+#### 3. **`options`：任务选项（位掩码）**
+
+- **作用**：通过位组合设置任务的特殊属性。
+
+- 常见选项位：
+
+  | 选项常量           | 功能描述                                   |
+  | ------------------ | ------------------------------------------ |
+  | `VX_FP_TASK`       | 启用浮点运算支持（分配浮点寄存器上下文）   |
+  | `VX_STDIO`         | 允许任务使用标准输入输出（如`printf`）     |
+  | `VX_NO_STACK_FILL` | 不填充栈（提高创建速度，但禁用栈溢出检测） |
+  | `VX_DSP_TASK`      | 启用 DSP 协处理器支持（如 TI DSP 芯片）    |
+
+- 示例：
+
+  ```c
+  // 同时启用浮点支持和标准IO
+  options = VX_FP_TASK | VX_STDIO;
+  ```
+
+#### 4. **`stackSize`：栈空间大小（字节）**
+
+- **作用**：为任务分配的栈内存大小，用于存储局部变量、函数调用上下文。
+
+- 影响因素：
+
+  - 任务函数的局部变量数量和大小。
+  - 函数调用深度（递归函数需更大栈）。
+  - 是否使用大型数据结构（如数组、结构体）。
+
+- 计算方法：
+
+  ```plaintext
+  栈需求 = 局部变量总和 + 最大嵌套函数调用深度 × 单次调用栈帧大小
+  ```
+
+- 典型值：
+
+  - 简单任务：2048~4096 字节。
+  - 复杂任务（如网络协议栈）：8192~65536 字节。
+
+- 安全措施：
+
+  - 启用栈溢出检测（部分 RTOS 支持）。
+  - 使用`taskShow()`工具监控运行时栈使用情况。
+
+#### 5. **`entryPt`：任务入口函数指针**
+
+- **作用**：指向任务代码的起始地址，即任务的主函数。
+
+- 函数原型：
+
+  ```c
+  void taskFunction(void *arg);  // VxWorks标准原型
+  ```
+
+- 示例：
+
+  ```c
+  void myTask(void *arg) {
+      // 任务逻辑...
+  }
+  
+  // 创建任务时传入函数指针
+  OSTaskSpawn(..., (FUNCPTR)myTask, ...);
+  ```
+
+#### 6. **`arg1`~`arg5`：传递给任务的参数**
+
+- **作用**：向任务入口函数传递初始化参数（最多 5 个）。
+
+- 传递方式：
+
+  - 直接传递数值（如整数、指针）。
+  - 传递结构体指针（需提前分配内存）。
+
+- 示例：
+
+  ```c
+  // 传递整数参数
+  OSTaskSpawn(..., 123, 456, 0, 0, 0);  // arg1=123, arg2=456
+  
+  // 传递结构体指针
+  struct Config { int rate; char* name; };
+  struct Config cfg = {100, "sensor"};
+  OSTaskSpawn(..., (int)&cfg, 0, 0, 0, 0);
+  ```
+
+- 在任务内接收参数：
+
+  ```c
+  void myTask(void *arg) {
+      int param1 = (int)arg;  // 接收arg1
+      // 或
+      struct Config *cfg = (struct Config*)arg;
+      printf("Rate: %d, Name: %s\n", cfg->rate, cfg->name);
+  }
+  ```
+
+### 三、**返回值与错误处理**
+
+- **成功**：返回新任务的 ID（非负整数）。
+
+- 失败：返回ERROR
+
+  （通常为 - 1），可能原因：
+
+  | 错误原因         | 解决方法                                    |
+  | ---------------- | ------------------------------------------- |
+  | 内存不足         | 增加系统内存或减小其他任务栈大小            |
+  | 无效优先级       | 检查优先级范围（如 0~255）                  |
+  | 任务 ID 已被使用 | 使用`0`让系统自动分配 ID                    |
+  | 栈大小小于最小值 | 确保`stackSize`≥系统最小要求（如 256 字节） |
+
+### 四、**参数配置最佳实践**
+
+1. **优先级设置**：
+   - 关键任务（如中断处理）：优先级 0~50。
+   - 普通任务（如数据处理）：优先级 100~200。
+   - 后台任务（如日志记录）：优先级 200+。
+2. **栈空间规划**：
+   - 使用静态分析工具（如 GCC 的`-Wstack-usage`）估算栈需求。
+   - 添加 20%~50% 的安全余量。
+3. **选项优化**：
+   - 非浮点任务禁用`VX_FP_TASK`，节省内存。
+   - 性能敏感任务禁用`VX_STDIO`，避免 IO 阻塞。
+
+### 五、**与其他 RTOS 的对比**
+
+| **RTOS**      | **任务创建函数** | **参数差异**                               |
+| ------------- | ---------------- | ------------------------------------------ |
+| **VxWorks**   | `OSTaskSpawn()`  | 支持 5 个参数传递，选项丰富                |
+| **FreeRTOS**  | `xTaskCreate()`  | 参数通过`pvParameters`统一传递（1 个指针） |
+| **uC/OS-III** | `OSTaskCreate()` | 需要显式传递 TCB 指针和栈内存起始地址      |
+
+### 六、**示例：创建网络接收任务**
+
+```c
+// 网络接收任务
+void netRecvTask(void *arg) {
+    int socket = (int)arg;
+    char buffer[1024];
+    int bytesRead;
+    
+    while (1) {
+        bytesRead = recv(socket, buffer, sizeof(buffer), 0);
+        if (bytesRead > 0) {
+            // 处理接收到的数据
+            processData(buffer, bytesRead);
+        }
+    }
+}
+
+// 创建网络任务
+void createNetTask(int socket) {
+    int taskId = OSTaskSpawn(
+        0,                   // 自动分配ID
+        80,                  // 较高优先级（确保及时处理网络数据）
+        VX_FP_TASK,          // 若任务使用浮点运算
+        8192,                // 较大栈空间（处理网络缓冲区）
+        (FUNCPTR)netRecvTask,
+        socket,              // 传递socket描述符
+        0, 0, 0, 0           // 未使用的参数
+    );
+    
+    if (taskId == ERROR) {
+        printf("Failed to create network task!\n");
+    }
+}
+```
+
+
+
+
+
+### 七、不同任务之间通信
+
+```
+1、事件模块（多线程、多任务接口）
+int32_t eventReceive(uint32_t events, unsigned char options, uint32_t timeout, uint32_t* pEventsReceived);
+events是期望接收的事件，bit位置1有效
+options:
+bit0=1,有一个事件到达就响应，ANY
+bit1=1,所有事件都到达，才响应，ALL
+bit2=1,收到事件后会将事件标志清零，CLR
+timeout:
+-1,永久等待，FOREVER
+其他，不等待，NOWAIT
+当返回值是0时，pEventsReceived为收到的事件
+
+int32_t eventSend(int32_t iTaskId, uint32_t events);
+iTaskId，创建任务时返回的Id
+events，要发给iTaskId的事件
+
+int32_t eventClear();
+将本任务的事件标志清零
+
+demo示例
+创建AppTask1、2两个任务，任务2给1发送事件(每10个时间片依次发送1、2、4、8、0xf)，
+任务1接收事件0xf,4个bit位有一个置1，就会响应，根据flag_match判断具体是哪一个事件到达
+‘‘‘
+#define OS_OPT_EVENT_PEND_ANY 0x1
+#define OS_OPT_EVENT_PEND_ALL 0x2
+#define OS_OPT_EVENT_PEND_CLR 0x4
+
+#define TIME_WAITFOREVER   -1
+#define TIME_NOWAIT   		0
+
+TASK_ID testID[3];
+void test_event(void)
+{
+    testID[0]=OSTaskSpawn(0xd003, 1, 0, 0x1000, (FUNCPTR)AppTask1, 0, 0, 0, 0);
+    testID[1]=OSTaskSpawn(0xd004, 2, 0, 0x1000, (FUNCPTR)AppTask2, 0, 0, 0, 0);
+
+}
+void AppTask1(void)
+{
+    k_err_t err;
+	#ifdef DEBUG
+	print2("\r\ntask1==");
+	#endif
+        uint32_t events =0xf;
+        uint32_t flag_match=0;
+        while(1)
+        {
+            err=eventReceive(events, OS_OPT_EVENT_PEND_ANY | OS_OPT_EVENT_PEND_CLR, TIME_WAITFOREVER, &flag_match);
+            if (err == K_ERR_NONE)
+            {
+              // 有事件到达，判断具体是哪个事件
+              if (flag_match == 0x1) {
+                  print2("eeny comes\n");
+              }
+              if (flag_match == 0x2) {
+                  print2("meeny comes\n");    
+              }
+              if (flag_match == 0x4) {
+                  print2("miny comes\n");
+              }
+              if (flag_match == 0x8) {
+                  print2("moe comes\n");
+              }
+              if (flag_match == 0xf) {
+                  print2("all come\n");
+              }
+            }
+        }
+
+	return;
+}
+void AppTask2(void)
+{
+    int i = 1;
+    SYS_Hook(0x0102);
+    #ifdef DEBUG
+    print2("\r\ntask2==");
+    #endif
+    while(1)
+    {
+      if (i == 2) {
+            print2("entry_task_trigger:\n");
+            print2("eeny will come\n");
+            // 发送eeny事件，task_listener2会被唤醒
+            eventSend((int32_t)testID[0], 0x1);
+        }
+        if (i == 3) {
+            print2("entry_task_trigger:\n");
+            print2("meeny will come\n");
+            // 发送eeny事件，task_listener2会被唤醒
+            eventSend((int32_t)testID[0], 0x2);
+        }
+        if (i == 4) {
+            print2("entry_task_trigger:\n");
+            print2("miny will come\n");
+            // 发送eeny事件，task_listener2会被唤醒
+            eventSend((int32_t)testID[0], 0x4);
+        }
+        if (i == 5) {
+            print2("entry_task_trigger:\n");
+            print2("moe will come\n");
+            // 发送eeny事件，task_listener2会被唤醒
+            eventSend((int32_t)testID[0], 0x8);
+        }
+        if (i == 6) {
+            print2("entry_task_trigger:\n");
+            print2("all will come\n");
+            // 同时发送四个事件，因为task_listener1的优先级高于task_listener2，因此这里task_listener1会被唤醒
+            eventSend((int32_t)testID[0], 0xf);
+        }
+        OSTaskDelay(10);
+        ++i;
+    }
+}
+’’’
+```
 
 
 
@@ -3014,6 +3442,285 @@ SDK/system_platform/FM_QL_bsp/libsrc/nfcps_v1_0/
 
 
 
+## 定时器
+
+```
+硬件的定时器
+任务调度时间片使用TTC0的定时器1，外部时钟源是OSC,主频33.3MHz
+
+2、Aux辅助时钟模块使用的TTC0的定时器1，外部时钟源是OSC,主频33.3MHz
+sysAuxClkInit()，操作系统将TTC0的定时器1进行初始化
+
+int32_t sysAuxClkRateSet(int32_t ticksPerSecond)
+设置Aux辅助时钟的中断频率
+
+int32_t sysAuxClkConnect(FUNCPTR routine, _Vx_usr_arg_t arg)
+中断处理程序挂接，1/ticksPerSecond 时间到，执行routine(arg)函数
+
+demo示例，每5ms触发一次中断，执行test_aux_handler(10)函数，如需停止，需在此处理函数中关闭
+‘‘‘
+void test_aux_handler(int arg)
+{
+    print2("\r\ntest_arg=%d",arg);
+}
+void test_aux(void)
+{
+    sysAuxClkDisable();
+    sysAuxClkRateSet(200);
+    sysAuxClkConnect((FUNCPTR)test_aux_handler, 10);
+    sysAuxClkEnable();
+}
+’’’
+ps,spaceos提供两个函数可实现定时器事件功能，可设置事件是周期性或一次性
+STATUS OSTimeEventSet(U32 timer, U32 delay, FUNCPTR entry, U32 priority,U32 option,U32 mode)	
+STATUS OSTimeEventClear(U32 timer)
+
+
+软定时器和系统时间模块都使用TTC1的定时器1，外部时钟源是OSC,主频33.3MHz
+OS_RTCLOCK_TICKS_PER_SEC，配置为2，即500ms计数+1
+
+------------------------------------------------------------------------------------------------------------------------
+软件定时器
+3、软定时器,最大8个软定时器
+k_err_t os_timer_create(k_timer_t *tmr, k_tick_t delay, k_tick_t period, k_timer_callback_t callback,void *cb_arg, k_opt_t opt)
+tmr是创建的软定时器
+period是执行周期
+delay个tick后触发callback
+opt，1表示触发1次，2表示周期性触发
+
+k_err_t os_timer_start(k_timer_t *tmr);
+启动软定时器
+
+k_err_t os_timer_stop(k_timer_t *tmr)
+执行过程中的定时器可stop
+
+’’’
+#define OS_OPT_TIMER_ONESHOT	1
+#define OS_OPT_TIMER_PERIODIC	2
+k_timer_t oneshot_tmr;
+k_timer_t periodic_tmr;
+k_tick_t os_systick_get(void)
+{
+	return k_tick_count;
+}
+void oneshot_timer_cb(void *arg)
+{
+    print2("this is oneshot timer callback, current systick: %d\n", os_systick_get());
+}
+
+void periodic_timer_cb(void *arg)
+{
+    print2("this is periodic timer callback, current systick: %d\n", os_systick_get());
+}
+
+void entry_task_demo(void *arg)
+{
+
+    print2("\r\n 这是一个一次性的timer，且超时时间是30个tick之后");
+    os_timer_create(&oneshot_tmr, 30, 0, oneshot_timer_cb, NULL, OS_OPT_TIMER_ONESHOT);
+
+    print2("\r\n 这是一个周期性的timer，第一次超时时间是20个tick之后，之后按30个tick为周期执行回调");
+    os_timer_create(&periodic_tmr, 20, 30, periodic_timer_cb, NULL, OS_OPT_TIMER_PERIODIC);
+
+    print2("current systick: %d\n", os_systick_get());
+
+    os_timer_start(&oneshot_tmr);
+    os_timer_start(&periodic_tmr);
+
+    while (1) {
+        OSTaskDelay(10);
+    }
+}
+’’’
+
+4、系统时间，
+int32_t gettimeofday(struct timeval *ptv, void *zone);
+将TTC1的定时器1启动后的过的秒数转换为ptv的秒数、毫秒数
+zone参数无效
+
+int32_t settimeofday(struct timeval *ptv, void *zone);
+将ptv的秒数、毫秒数转换为TTC1的定时器1启动后的秒数
+zone参数无效
+
+int32_t gmtime_r(const time_t *timer,struct tm * timeBuffer);
+将timer的秒数，转换为tm结构的日历时间，以UTC时间1970-1-1 00:00:00为基准
+
+void showtime(struct tm* timeptr)
+可打印tm结构的日历时间
+
+OS_UTC_YEAR、OS_UTC_MON、OS_UTC_DAY
+初始化阶段根据设置的年月日，调用settimeofday，更改TTC1的定时器1启动后的秒数
+待将该秒数记录与rt时钟关联，当前是与TTC1的定时器关联
+
+'''
+void test_rtclk(void)
+{
+    struct timeval tv;
+	time_t cal=calendar_init(2023,12,29);
+	print2("\r\n2023-12-29 0:0:0, time=%d =%d day",cal,cal/3600/24);
+	tv.tv_sec=cal+3600*10;
+        
+    print2("\r\n settimeofday");
+	settimeofday(&tv, NULL);
+	return;
+}
+’’’
+```
+
+
+
+## shell
+
+SDK\system_platform\SpaceOS\Source\shell\h
+
+
+
+已经实现，等待使用
+
+extern unsigned int shellExtParsePara(char *string);
+
+extern int shellExtRun(shellFunction function, int argc, char *argv[]);
+
+void shellTask(void *param);
+
+
+
+
+
+
+
+# TODO：
+
+结合需求实现：
+
+断点续传
+
+版本回退
+
+- 划定某一分区存放默认出厂固件，在需要回滚时进行flash的擦除和写入
+
+全量升级
+
+- 将升级包下载，擦除原有的升级包
+
+差分升级
+
+- 下载补丁包（patch），在原有的软件包上升级
+- 需要服务器端存放对应的固件版本生成补丁包
+- 生成补丁数据后压缩写入补丁文件
+
+压缩/解压
+
+- 传输文件前压缩，收到文件后解压
+
+
+
+
+
+
+
+OTA相关的论文、TSN的论文、厂商实际场景OTA
+
+​	提取不足
+
+场景：有线OTA
+
+OTA中确定性场景
+
+技术：创新
+
+
+
+边缘升级
+
+
+
+安全方面考虑：[互联汽车中的安全无线软件更新：一项调查 - ScienceDirect --- Secure over-the-air software updates in connected vehicles: A survey - ScienceDirect](https://www.sciencedirect.com/science/article/abs/pii/S1389128619314963)
+
+[面向物联网的安全固件无线更新：调查、挑战和讨论 - ScienceDirect --- Secure firmware Over-The-Air updates for IoT: Survey, challenges, and discussions - ScienceDirect](https://www.sciencedirect.com/science/article/abs/pii/S2542660522000142)
+
+汽车无线OTA：[面向汽车行业的无线固件更新 （FOTA） --- Firmware Update Over The Air (FOTA) for Automotive Industry (sae.org)](https://www.sae.org/publications/technical-papers/content/2007-01-3523/)
+
+
+
+
+
+
+
+# 差分升级
+
+**参考文献：**
+
+- [适用于嵌入式单片机的差分升级通用库+详细教程-CSDN博客](https://blog.csdn.net/qq_35333978/article/details/128211763)
+
+
+
+根据新老固件生成补丁包，并将补丁包压缩：
+
+- [README.md · 王瑞/make_udiff - 码云 - 开源中国 (gitee.com)](https://gitee.com/qq791314247/make_udiff/blob/master/README.md)
+
+- [README.md · 王瑞/lzma_bsdiff - 码云 - 开源中国 (gitee.com)](https://gitee.com/qq791314247/lzma_bsdiff/blob/master/README.md)
+
+将补丁包根据老固件升级：
+
+- [user/bs_user_interface.c · 王瑞/mcu_bsdiff_upgrade - 码云 - 开源中国 (gitee.com)](https://gitee.com/qq791314247/mcu_bsdiff_upgrade/blob/master/user/bs_user_interface.c)
+
+
+
+
+
+使用bsdiff生成差分包、lzma压缩和解压
+
+
+
+1. [linux下如何用C语言通过bsdiff4库给你的固件制作升级包？_linux下bsdiff差分升级算法c语言实现-CSDN博客](https://blog.csdn.net/daocaokafei/article/details/143579227)
+
+   1. ```
+      通过api操作
+      api 接口说明
+      以下是 bsdiff4 提供的主要功能：
+      
+      int bsdiffFile(const char* oldfile, const char* newfile, const char* patchfile)
+      功能：
+      	将oldfile、newfile生成补丁文件文件patchfile
+      参数：
+      	oldfile：初始版本文件
+      	newfile：修改后的最新的版本文件
+      	patchfile：补丁文件
+      返回值
+      	成功：0
+      	失败：负值
+      
+      
+      int bsPatchFile(const char *oldfile, const char *newfile, const char *patchfile)
+      功能：
+      	将oldfile打上补丁文件文件patchfile，生成新的文件newfile
+      参数：
+      	oldfile：初始版本文件
+      	newfile：打上补丁后的文件
+      	patchfile：补丁文件
+      返回值
+      	成功：0
+      	失败：负值
+      ```
+
+
+
+
+
+lseek
+
+memcmp
+
+1. 看之前的
+
+
+
+
+
+请求更新
+
+收到设备端固件名和版本号，和本地最新对应的固件生成差分包发送
 
 
 
@@ -3023,13 +3730,6 @@ SDK/system_platform/FM_QL_bsp/libsrc/nfcps_v1_0/
 
 
 
+去除压缩代码
 
-
-
-
-
-
-
-
-
-
+添加压缩代码

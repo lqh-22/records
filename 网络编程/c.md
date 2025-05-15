@@ -5,7 +5,7 @@
 
 
 
-
+# IO操作
 
 ## 标准输入输出/标准错误输出
 
@@ -311,6 +311,65 @@ Learn more:
 1. [C 库函数 - strcat() | 菜鸟教程](https://www.runoob.com/cprogramming/c-function-strcat.html)
 2. [strcat ()-并置字符串](https://www.ibm.com/docs/zh/i/7.5?topic=functions-strcat-concatenate-strings)
 3. [c语言如何使用strcat函数 | PingCode智库](https://docs.pingcode.com/baike/1531715)
+
+
+
+
+
+## memcpy
+
+`memcpy` 是 C/C++ 标准库中用于内存复制的函数，其核心作用是将一块内存区域的数据复制到另一块内存区域。以下是对该函数的详细解析：
+
+**函数原型**
+
+```c
+#include <string.h>
+
+void* memcpy(void* dest, const void* src, size_t n);
+```
+
+
+
+**参数与返回值**
+
+1. **`dest`**
+   - 目标内存区域的起始地址（指针），复制的内容将被写入此处。
+   - 类型为 `void*`，可接受任意类型的指针。
+2. **`src`**
+   - 源内存区域的起始地址（指针），数据将从这里读取。
+   - 类型为 `const void*`，表示只读，防止修改源数据。
+3. **`n`**
+   - 需要复制的字节数（`size_t` 类型，无符号整数）。
+4. **返回值**
+   - 返回指向目标内存区域 `dest` 的指针，便于链式调用。
+
+**功能说明**
+
+- **按字节复制**：逐字节复制内存内容，不关心数据类型。
+- **不检查边界**：不会自动判断目标内存是否足够，需手动确保 `dest` 有至少 `n` 字节的可用空间。
+- **可能覆盖内存**：若 `dest` 和 `src` 内存区域有重叠，结果**未定义**（需使用 `memmove` 处理重叠情况）。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
