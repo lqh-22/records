@@ -16,6 +16,10 @@
         "stdlib.h": "c",
         "winsock2.h": "c",
         "if.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "bzlib.h": "c",
+        "fcntl.h": "c",
+        "stat.h": "c",
+        "versiontable.h": "c"
     }
 }

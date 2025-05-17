@@ -4,6 +4,8 @@
 #include <time.h>      // 时间处理库，用于获取当前时间
 #include <winsock2.h>  // Windows Socket API，用于网络编程
 
+#include "bspatch/bspatch.h" // bspatch相关函数的头文件
+
 #define SIGN 0xAABBCCDD // 检验标记
 #define EXIT 0xFFFFFFFF // 退出标记
 #define MAXSIZE 1024 // 最大数据包大小
@@ -40,12 +42,33 @@ typedef struct {
     int reqBytes; // 请求下一字节大小
 } reqDataSize;
 
+/**
+ * 设备端：存放固件版本列表
+ */
+typedef struct {
+    char fileName[256];  // 固件名
+    char version[16]; // 版本号
+} verTable; // 版本号表结构体
+
+#define VER_TABLE_COUNT 20 // 版本号个数
+
 char recvBuf[MAXSIZE], sendBuf[MAXSIZE];  // 接受和发送缓冲区
 FILE *fileFp, *otaFp;  // 执行文件和otaFlash文件指针
 headData reqHead, resHead; // 请求头和响应头数据包结构体;
 flashData otaFlash; // flash数据包结构体
 reqDataSize reqData; // 请求数据包结构体
 int fileSize = 0, writeBytes = 0; // 文件大小和已经传输的文件大小
+
+void initVerTable(verTable *table) {
+    // 读取版本号表文件
+    FILE *fp = fopen("versionTable.txt", "rb+");
+    if (fp == NULL) {
+        printf("fail to open versionTable.txt\n");
+        return;
+    }
+    fread(table, sizeof(verTable), VER_TABLE_COUNT, fp);
+    fclose(fp);
+}
 
 int main(int argc, char const *argv[]){
     if (argc != 4) {
@@ -77,8 +100,26 @@ int main(int argc, char const *argv[]){
         exit(1);
     }
     // 发送头数据包
+    /**
+     * 1.标记
+     * 2.文件名
+     * 3.本地的版本号（从flash中读取版本号表）
+     */
     reqHead.sign = SIGN;
     strcpy(reqHead.fileName, argv[3]);
+
+    // 获得版本号信息
+    verTable table[VER_TABLE_COUNT];
+    initVerTable(table);
+    strcpy(reqHead.version, "v1.0");
+    for (int i = 0; i < VER_TABLE_COUNT; ++i) {
+        if (strcmp(table[i].fileName, reqHead.fileName) == 0) {
+            strcpy(reqHead.version, table[i].version);
+            break;
+        }
+    }
+
+
     memset(sendBuf, 0x00, sizeof(sendBuf));
     memcpy(sendBuf, &reqHead, sizeof(headData));
     if ((send(remoteFd, sendBuf, sizeof(reqHead), 0)) == -1) {
@@ -137,7 +178,8 @@ int main(int argc, char const *argv[]){
     // 要断点续传，要以ab+的方式打开文件，ab+会在文件末尾追加数据
     fileFp = fopen(resHead.fileName, "ab+");
     while (writeBytes < fileSize){
-        printf("\rFinished:%.2f%% total %d bytes, recved %d bytes", writeBytes * 1.0 / fileSize * 100, fileSize, writeBytes);
+        printf("\n%d bytes, recved %d bytes\n", fileSize, writeBytes);
+        // printf("\rFinished:%.2f%% total %d bytes, recved %d bytes", writeBytes * 1.0 / fileSize * 100, fileSize, writeBytes);
         reqData.sign = SIGN;
         reqData.startBytes = writeBytes;
         if (fileSize - writeBytes > MAXSIZE) {
@@ -159,11 +201,13 @@ int main(int argc, char const *argv[]){
         // 将文件指针移动到指定的位置开始写入数据
         fseek(fileFp, reqData.startBytes, SEEK_SET);
         fwrite(recvBuf, sizeof(char), reqData.reqBytes, fileFp);
+        fflush(fileFp);
         writeBytes += reqData.reqBytes;
         otaFlash.writeBytes = writeBytes; // 更新已经传输的文件大小
         if (writeBytes == fileSize) otaFlash.flag = 1;  // 更新标志位，完整传输后值为1，未完成传输值为0
         fseek(otaFp, 0, SEEK_SET);
         fwrite(&otaFlash, sizeof(flashData), 1, otaFp); // 将数据包结构体写入文件中
+        fflush(otaFp);
     }
     printf("\rFinished:%.2f%% total %d bytes, recved %d bytes", writeBytes * 1.0 / fileSize * 100, fileSize, writeBytes);
     // 发送exit标记，表示传输完成
@@ -174,8 +218,18 @@ int main(int argc, char const *argv[]){
         fprintf(stderr, "fail to send\n");
         exit(1);
     }
-    
     printf("\nrecv file %s success, total %d bytes\n", reqHead.fileName, resHead.fileSize);
+    // 将收到的补丁包在老版本的基础上升级
+    char *newFileName = strcat(resHead.version, reqHead.fileName);
+    printf("\nstart to upgrade %s, newFilename is %s\n", reqHead.fileName, newFileName);
+    printf("bspatch %s %s %s\n", reqHead.fileName, newFileName, resHead.fileName);
+    // 这个文件
+    fflush(fileFp);
+    bsPatchFile(reqHead.fileName, newFileName, resHead.fileName);
+
+
+
+
     fclose(fileFp);
     fclose(otaFp);
     WSACleanup(); // 清理Winsock

@@ -3589,6 +3589,14 @@ void shellTask(void *param);
 
 
 
+
+
+编译的时候加.a
+
+
+
+
+
 # TODO：
 
 结合需求实现：
@@ -3616,6 +3624,10 @@ void shellTask(void *param);
 
 
 
+
+将server和client合并到一个.c文件，通过命令启动服务还是客户端
+
+移植到spaceOS上
 
 
 

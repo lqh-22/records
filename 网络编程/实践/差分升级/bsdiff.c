@@ -32,14 +32,14 @@
 
 #include <sys/types.h>
 
-// #include "bzlib/bzlib.h"
+#include "bzip2/bzlib.h"
 #include <err.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#define BSDIFF_EXECUTABLE
+// #define BSDIFF_EXECUTABLE
 
 #define MIN(x,y) (((x)<(y)) ? (x) : (y))
 
@@ -362,95 +362,95 @@ int bsdiff(const uint8_t* old, int64_t oldsize, const uint8_t* new, int64_t news
 }
 
 // 将buffer指向的数据压缩后写入到补丁文件
-// static int bz2_write(struct bsdiff_stream* stream, const void* buffer, int size)
-// {
-//     int bz2err;
-//     BZFILE* bz2;
-
-//     bz2 = (BZFILE*)stream->opaque;
-//     BZ2_bzWrite(&bz2err, bz2, (void*)buffer, size);
-//     if (bz2err != BZ_STREAM_END && bz2err != BZ_OK)
-//         return -1;
-
-//     return 0;
-// }
-
-// 不需要压缩后写入，直接写入补丁文件
-static int writeFile(struct bsdiff_stream* stream, const void* buffer, int size)
+static int bz2_write(struct bsdiff_stream* stream, const void* buffer, int size)
 {
-    FILE* pf = (FILE*)stream->opaque;
-    if (fwrite(buffer, 1, size, pf) != (size_t)size)
+    int bz2err;
+    BZFILE* bz2;
+
+    bz2 = (BZFILE*)stream->opaque;
+    BZ2_bzWrite(&bz2err, bz2, (void*)buffer, size);
+    if (bz2err != BZ_STREAM_END && bz2err != BZ_OK)
         return -1;
+
     return 0;
 }
 
-// int bsdiffFile(const char* oldfile, const char* newfile, const char* patchfile){
-//     int fd;
-//     int bz2err;
-//     uint8_t *old,*new;
-//     off_t oldsize,newsize;
-//     uint8_t buf[8];
-//     FILE * pf;
-//     struct bsdiff_stream stream;
-//     BZFILE* bz2;
-
-//     memset(&bz2, 0, sizeof(bz2));
-//     stream.malloc = malloc;
-//     stream.free = free;
-//     stream.write = bz2_write;
-
-// //    if(argc!=4) errx(1,"usage: %s oldfile newfile patchfile\n",argv[0]);
-
-//     /* Allocate oldsize+1 bytes instead of oldsize bytes to ensure
-//         that we never try to malloc(0) and get a NULL pointer */
-//     if(((fd=open(oldfile,O_RDONLY,0))<0) ||
-//        ((oldsize=lseek(fd,0,SEEK_END))==-1) ||
-//        ((old=malloc(oldsize+1))==NULL) ||
-//        (lseek(fd,0,SEEK_SET)!=0) ||
-//        (read(fd,old,oldsize)!=oldsize) ||
-//        (close(fd)==-1)) err(1,"%s",oldfile);
-
-
-//     /* Allocate newsize+1 bytes instead of newsize bytes to ensure
-//         that we never try to malloc(0) and get a NULL pointer */
-//     if(((fd=open(newfile,O_RDONLY,0))<0) ||
-//        ((newsize=lseek(fd,0,SEEK_END))==-1) ||
-//        ((new=malloc(newsize+1))==NULL) ||
-//        (lseek(fd,0,SEEK_SET)!=0) ||
-//        (read(fd,new,newsize)!=newsize) ||
-//        (close(fd)==-1)) err(1,"%s",newfile);
-
-//     /* Create the patch file */
-//     if ((pf = fopen(patchfile, "w")) == NULL)
-//         err(1, "%s", patchfile);
-
-//     /* Write header (signature+newsize)*/
-//     offtout(newsize, buf);
-//     if (fwrite("ENDSLEY/BSDIFF43", 16, 1, pf) != 1 ||
-//         fwrite(buf, sizeof(buf), 1, pf) != 1)
-//         err(1, "Failed to write header");
-
-
-//     if (NULL == (bz2 = BZ2_bzWriteOpen(&bz2err, pf, 9, 0, 0)))
-//         errx(1, "BZ2_bzWriteOpen, bz2err=%d", bz2err);
-
-//     stream.opaque = bz2;
-//     if (bsdiff(old, oldsize, new, newsize, &stream))
-//         err(1, "bsdiff");
-
-//     BZ2_bzWriteClose(&bz2err, bz2, 0, NULL, NULL);
-//     if (bz2err != BZ_OK)
-//         err(1, "BZ2_bzWriteClose, bz2err=%d", bz2err);
-
-//     if (fclose(pf))
-//         err(1, "fclose");
-
-//     /* Free the memory we used */
-//     free(old);
-//     free(new);
-
+// 不需要压缩后写入，直接写入补丁文件
+// static int writeFile(struct bsdiff_stream* stream, const void* buffer, int size)
+// {
+//     FILE* pf = (FILE*)stream->opaque;
+//     if (fwrite(buffer, 1, size, pf) != (size_t)size)
+//         return -1;
 //     return 0;
 // }
+
+int bsdiffFile(const char* oldfile, const char* newfile, const char* patchfile){
+    int fd;
+    int bz2err;
+    uint8_t *old,*new;
+    off_t oldsize,newsize;
+    uint8_t buf[8];
+    FILE * pf;
+    struct bsdiff_stream stream;
+    BZFILE* bz2;
+
+    memset(&bz2, 0, sizeof(bz2));
+    stream.malloc = malloc;
+    stream.free = free;
+    stream.write = bz2_write;
+
+//    if(argc!=4) errx(1,"usage: %s oldfile newfile patchfile\n",argv[0]);
+
+    /* Allocate oldsize+1 bytes instead of oldsize bytes to ensure
+        that we never try to malloc(0) and get a NULL pointer */
+    if(((fd=open(oldfile,O_RDONLY,0))<0) ||
+       ((oldsize=lseek(fd,0,SEEK_END))==-1) ||
+       ((old=malloc(oldsize+1))==NULL) ||
+       (lseek(fd,0,SEEK_SET)!=0) ||
+       (read(fd,old,oldsize)!=oldsize) ||
+       (close(fd)==-1)) err(1,"%s",oldfile);
+
+
+    /* Allocate newsize+1 bytes instead of newsize bytes to ensure
+        that we never try to malloc(0) and get a NULL pointer */
+    if(((fd=open(newfile,O_RDONLY,0))<0) ||
+       ((newsize=lseek(fd,0,SEEK_END))==-1) ||
+       ((new=malloc(newsize+1))==NULL) ||
+       (lseek(fd,0,SEEK_SET)!=0) ||
+       (read(fd,new,newsize)!=newsize) ||
+       (close(fd)==-1)) err(1,"%s",newfile);
+
+    /* Create the patch file */
+    if ((pf = fopen(patchfile, "w")) == NULL)
+        err(1, "%s", patchfile);
+
+    /* Write header (signature+newsize)*/
+    offtout(newsize, buf);
+    if (fwrite("ENDSLEY/BSDIFF43", 16, 1, pf) != 1 ||
+        fwrite(buf, sizeof(buf), 1, pf) != 1)
+        err(1, "Failed to write header");
+
+
+    if (NULL == (bz2 = BZ2_bzWriteOpen(&bz2err, pf, 9, 0, 0)))
+        errx(1, "BZ2_bzWriteOpen, bz2err=%d", bz2err);
+
+    stream.opaque = bz2;
+    if (bsdiff(old, oldsize, new, newsize, &stream))
+        err(1, "bsdiff");
+
+    BZ2_bzWriteClose(&bz2err, bz2, 0, NULL, NULL);
+    if (bz2err != BZ_OK)
+        err(1, "BZ2_bzWriteClose, bz2err=%d", bz2err);
+
+    if (fclose(pf))
+        err(1, "fclose");
+
+    /* Free the memory we used */
+    free(old);
+    free(new);
+
+    return 0;
+}
 
 
 
@@ -460,19 +460,19 @@ static int writeFile(struct bsdiff_stream* stream, const void* buffer, int size)
 int main(int argc,char *argv[])
 {
 	int fd;
-	// int bz2err;
+	int bz2err;
 	uint8_t *old,*new;  // 指向新老文件内容
 	off_t oldsize,newsize;
 	uint8_t buf[8];  // 存储新文件大小的数组
 	FILE * pf;  // 补丁文件的文件指针
 	struct bsdiff_stream stream;  // bsdiff用于写入补丁的流结构体
-	// BZFILE* bz2;  // bzip2文件指针
+	BZFILE* bz2;  // bzip2文件指针
 
-	// memset(&bz2, 0, sizeof(bz2));
+	memset(&bz2, 0, sizeof(bz2));
 	stream.malloc = malloc;
 	stream.free = free;
-	// stream.write = bz2_write; // 压缩后写入补丁文件
-	stream.write = writeFile;
+	stream.write = bz2_write; // 压缩后写入补丁文件
+	// stream.write = writeFile;
 
 	if(argc!=4) errx(1,"usage: %s oldfile newfile patchfile\n",argv[0]);
  
@@ -504,18 +504,18 @@ int main(int argc,char *argv[])
 		err(1, "Failed to write header");
 
 	// 初始化bzip2写入流
-	// if (NULL == (bz2 = BZ2_bzWriteOpen(&bz2err, pf, 9, 0, 0)))
-	// 	errx(1, "BZ2_bzWriteOpen, bz2err=%d", bz2err);
+	if (NULL == (bz2 = BZ2_bzWriteOpen(&bz2err, pf, 9, 0, 0)))
+		errx(1, "BZ2_bzWriteOpen, bz2err=%d", bz2err);
 
-	// stream.opaque = bz2; // 记录压缩补丁文件的写入目标
-	stream.opaque = pf;
+	stream.opaque = bz2; // 记录压缩补丁文件的写入目标
+	// stream.opaque = pf;
 	if (bsdiff(old, oldsize, new, newsize, &stream))
 		err(1, "bsdiff");
 
 	// 关闭bzip2写入流
-	// BZ2_bzWriteClose(&bz2err, bz2, 0, NULL, NULL);
-	// if (bz2err != BZ_OK)
-	// 	err(1, "BZ2_bzWriteClose, bz2err=%d", bz2err);
+	BZ2_bzWriteClose(&bz2err, bz2, 0, NULL, NULL);
+	if (bz2err != BZ_OK)
+		err(1, "BZ2_bzWriteClose, bz2err=%d", bz2err);
 
 	// 关闭补丁文件
 	if (fclose(pf))

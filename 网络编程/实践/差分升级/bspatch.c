@@ -26,7 +26,7 @@
  */
 
 #include "bspatch.h"
-// #include <bzlib.h>
+#include "bzip2/bzlib.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define BSPATCH_EXECUTABLE
+// #define BSPATCH_EXECUTABLE
 
 static int64_t offtin(uint8_t *buf)
 {
@@ -119,96 +119,96 @@ int bspatch(const uint8_t *old, int64_t oldsize, uint8_t *new, int64_t newsize, 
 
 
 // 解压后读取
-// static int bz2_read(const struct bspatch_stream *stream, void *buffer, int length)
-// {
-// 	int n;
-// 	int bz2err;
-// 	BZFILE *bz2;
-
-// 	bz2 = (BZFILE *)stream->opaque;
-// 	n = BZ2_bzRead(&bz2err, bz2, buffer, length);
-// 	if (n != length)
-// 		return -1;
-
-// 	return 0;
-// }
-
-// 直接读取
-static int readFile(const struct bspatch_stream *stream, void *buffer, int length)
+static int bz2_read(const struct bspatch_stream *stream, void *buffer, int length)
 {
-    FILE *pf = (FILE *)stream->opaque;
-    if (fread(buffer, 1, length, pf) != (size_t)length)
-        return -1;
-    return 0;
+	int n;
+	int bz2err;
+	BZFILE *bz2;
+
+	bz2 = (BZFILE *)stream->opaque;
+	n = BZ2_bzRead(&bz2err, bz2, buffer, length);
+	if (n != length)
+		return -1;
+
+	return 0;
 }
 
-// int bsPatchFile(const char *oldfile, const char *newfile, const char *patchfile)
+// 直接读取
+// static int readFile(const struct bspatch_stream *stream, void *buffer, int length)
 // {
-// 	FILE *f;
-// 	int fd;
-// 	int bz2err;
-// 	uint8_t header[24];
-// 	uint8_t *old, *new;
-// 	int64_t oldsize, newsize;
-// 	BZFILE *bz2;
-// 	struct bspatch_stream stream;
-// 	struct stat sb;
+//     FILE *pf = (FILE *)stream->opaque;
+//     if (fread(buffer, 1, length, pf) != (size_t)length)
+//         return -1;
+//     return 0;
+// }
 
-// 	/* Open patch file */
-// 	if ((f = fopen(patchfile, "r")) == NULL)
-// 		err(1, "fopen(%s)", patchfile);
+int bsPatchFile(const char *oldfile, const char *newfile, const char *patchfile)
+{
+	FILE *f;
+	int fd;
+	int bz2err;
+	uint8_t header[24];
+	uint8_t *old, *new;
+	int64_t oldsize, newsize;
+	BZFILE *bz2;
+	struct bspatch_stream stream;
+	struct stat sb;
 
-// 	/* Read header */
-// 	if (fread(header, 1, 24, f) != 24)
-// 	{
-// 		if (feof(f))
-// 			errx(1, "Corrupt patch\n");
-// 		err(1, "fread(%s)", patchfile);
-// 	}
+	/* Open patch file */
+	if ((f = fopen(patchfile, "r")) == NULL)
+		err(1, "fopen(%s)", patchfile);
 
-// 	/* Check for appropriate magic */
-// 	if (memcmp(header, "ENDSLEY/BSDIFF43", 16) != 0)
-// 		errx(1, "Corrupt patch\n");
+	/* Read header */
+	if (fread(header, 1, 24, f) != 24)
+	{
+		if (feof(f))
+			errx(1, "Corrupt patch\n");
+		err(1, "fread(%s)", patchfile);
+	}
 
-// 	/* Read lengths from header */
-// 	newsize = offtin(header + 16);
-// 	if (newsize < 0)
-// 		errx(1, "Corrupt patch\n");
+	/* Check for appropriate magic */
+	if (memcmp(header, "ENDSLEY/BSDIFF43", 16) != 0)
+		errx(1, "Corrupt patch\n");
 
-// 	/* Close patch file and re-open it via libbzip2 at the right places */
-// 	if (((fd = open(oldfile, O_RDONLY, 0)) < 0) ||
-// 		((oldsize = lseek(fd, 0, SEEK_END)) == -1) ||
-// 		((old = malloc(oldsize + 1)) == NULL) ||
-// 		(lseek(fd, 0, SEEK_SET) != 0) ||
-// 		(read(fd, old, oldsize) != oldsize) ||
-// 		(fstat(fd, &sb)) ||
-// 		(close(fd) == -1))
-// 		err(1, "%s", oldfile);
-// 	if ((new = malloc(newsize + 1)) == NULL)
-// 		err(1, NULL);
+	/* Read lengths from header */
+	newsize = offtin(header + 16);
+	if (newsize < 0)
+		errx(1, "Corrupt patch\n");
 
-// 	if (NULL == (bz2 = BZ2_bzReadOpen(&bz2err, f, 0, 0, NULL, 0)))
-// 		errx(1, "BZ2_bzReadOpen, bz2err=%d", bz2err);
+	/* Close patch file and re-open it via libbzip2 at the right places */
+	if (((fd = open(oldfile, O_RDONLY, 0)) < 0) ||
+		((oldsize = lseek(fd, 0, SEEK_END)) == -1) ||
+		((old = malloc(oldsize + 1)) == NULL) ||
+		(lseek(fd, 0, SEEK_SET) != 0) ||
+		(read(fd, old, oldsize) != oldsize) ||
+		(fstat(fd, &sb)) ||
+		(close(fd) == -1))
+		err(1, "%s", oldfile);
+	if ((new = malloc(newsize + 1)) == NULL)
+		err(1, NULL);
 
-// 	stream.read = bz2_read;
-// 	stream.opaque = bz2;
-// 	if (bspatch(old, oldsize, new, newsize, &stream))
-// 		errx(1, "bspatch");
+	if (NULL == (bz2 = BZ2_bzReadOpen(&bz2err, f, 0, 0, NULL, 0)))
+		errx(1, "BZ2_bzReadOpen, bz2err=%d", bz2err);
 
-// 	/* Clean up the bzip2 reads */
-// 	BZ2_bzReadClose(&bz2err, bz2);
-// 	fclose(f);
+	stream.read = bz2_read;
+	stream.opaque = bz2;
+	if (bspatch(old, oldsize, new, newsize, &stream))
+		errx(1, "bspatch");
 
-// 	/* Write the new file */
-// 	if (((fd = open(newfile, O_CREAT | O_TRUNC | O_WRONLY, sb.st_mode)) < 0) ||
-// 		(write(fd, new, newsize) != newsize) || (close(fd) == -1))
-// 		err(1, "%s", newfile);
+	/* Clean up the bzip2 reads */
+	BZ2_bzReadClose(&bz2err, bz2);
+	fclose(f);
 
-// 	free(new);
-// 	free(old);
+	/* Write the new file */
+	if (((fd = open(newfile, O_CREAT | O_TRUNC | O_WRONLY, sb.st_mode)) < 0) ||
+		(write(fd, new, newsize) != newsize) || (close(fd) == -1))
+		err(1, "%s", newfile);
 
-// 	return 0;
-// };
+	free(new);
+	free(old);
+
+	return 0;
+};
 
 #if defined(BSPATCH_EXECUTABLE)
 
@@ -217,11 +217,11 @@ int main(int argc, char *argv[])
 {
 	FILE *f;
 	int fd;
-	// int bz2err;
+	int bz2err;
 	uint8_t header[24];  // 补丁文件的头部
 	uint8_t *old, *new;
 	int64_t oldsize, newsize;
-	// BZFILE *bz2;  // bzip2文件指针
+	BZFILE *bz2;  // bzip2文件指针
 	struct bspatch_stream stream;  // bspatch用于提取补丁的流结构体
 	struct stat sb;  // 旧文件的状态结构体，生成新文件时让新文件继承旧文件的权限
 
@@ -262,18 +262,18 @@ int main(int argc, char *argv[])
 		err(1, NULL);
 
 	// 初始化读bzip2
-	// if (NULL == (bz2 = BZ2_bzReadOpen(&bz2err, f, 0, 0, NULL, 0)))
-	// 	errx(1, "BZ2_bzReadOpen, bz2err=%d", bz2err);
+	if (NULL == (bz2 = BZ2_bzReadOpen(&bz2err, f, 0, 0, NULL, 0)))
+		errx(1, "BZ2_bzReadOpen, bz2err=%d", bz2err);
 
 	// 应用补丁
-	// stream.read = bz2_read;
-	stream.read = readFile;
-	stream.opaque = f;
+	stream.read = bz2_read;
+	// stream.read = readFile;
+	stream.opaque = bz2;
 	if (bspatch(old, oldsize, new, newsize, &stream))
 		errx(1, "bspatch");
 
 	/* Clean up the bzip2 reads */
-	// BZ2_bzReadClose(&bz2err, bz2);
+	BZ2_bzReadClose(&bz2err, bz2);
 	fclose(f);
 
 	// 以原文件权限创建新文件（如已存在则覆盖）
